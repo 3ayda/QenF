@@ -50,7 +50,7 @@ if __name__ == "__main__":
     scraper.scrape_mnbaq()
     # On pourrait ajouter scraper.scrape_moulin() ici
     # Force un événement test pour vérifier l'affichage
-    self.events.append({
+    scraper.events.append({
     "titre": "Événement Test",
     "lieu": "Partout à Québec",
     "theme": "arts",
