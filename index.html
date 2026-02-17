@@ -1,1 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Québec en Famille - Agrégateur d'activités</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
 
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600">QC</span>
+                    <span class="text-2xl font-bold text-gray-800 ml-1">En Famille</span>
+                </div>
+
+                <nav class="hidden md:flex space-x-8 text-gray-600 font-medium">
+                    <a href="#" class="hover:text-blue-600 transition">Événements</a>
+                    <a href="#" class="hover:text-blue-600 transition">Carte</a>
+                    <a href="#" class="hover:text-blue-600 transition">Favoris</a>
+                </nav>
+
+                <div class="relative hidden sm:block">
+                    <input type="text" placeholder="Chercher un atelier..." 
+                           class="bg-gray-100 border-none rounded-full py-2 px-4 pl-10 focus:ring-2 focus:ring-blue-500 text-sm">
+                    <i class="fa fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="bg-blue-600 py-8 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="text-3xl font-bold mb-6 text-center md:text-left">Trouvez l'activité parfaite à Québec</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-xl shadow-lg">
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Thématique</label>
+                    <select class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
+                        <option>Tous les thèmes</option>
+                        <option>🎨 Arts & Ateliers</option>
+                        <option>❄️ Plein air & Hiver</option>
+                        <option>🏒 Sport</option>
+                        <option>🔬 Sciences & Découvertes</option>
+                        <option>🎭 Spectacles</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Âge de l'enfant</label>
+                    <select class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
+                        <option>Tous les âges</option>
+                        <option>0-2 ans (Poupons)</option>
+                        <option>3-5 ans (Préscolaire)</option>
+                        <option>6-12 ans (Primaire)</option>
+                        <option>13 ans + (Ados)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Période (Février 2026)</label>
+                    <select class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
+                        <option>Tout le mois</option>
+                        <option>Semaine 1 (1-8 fév.)</option>
+                        <option>Semaine 2 (9-15 fév.)</option>
+                        <option>Semaine 3 (16-22 fév.)</option>
+                        <option>Semaine 4 (Relâche - dès le 23 fév.)</option>
+                    </select>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <main class="max-w-7xl mx-auto px-4 py-10 text-center text-gray-400">
+      <div id="eventGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        </div>
+    </main>
+// On déclare une variable globale pour stocker les données une fois chargées
+let toutesLesDonnees = [];
+
+// Nouvelle fonction pour CHARGER les données depuis le fichier JSON
+async function chargerDonnees() {
+    try {
+        // Le navigateur va chercher le fichier généré par Python
+        const reponse = await fetch('evenements.json');
+        toutesLesDonnees = await reponse.json();
+        
+        // Une fois chargé, on affiche les cartes
+        afficherCartes(toutesLesDonnees);
+    } catch (erreur) {
+        console.error("Erreur lors du chargement des données :", erreur);
+        document.getElementById('eventGrid').innerHTML = "<p>Erreur de chargement des activités...</p>";
+    }
+}
+
+// Fonction pour AFFICHER les cartes (le template qu'on a fait ensemble)
+function afficherCartes(liste) {
+    const grille = document.getElementById('eventGrid');
+    grille.innerHTML = liste.map(event => `
+        <div class="event-card bg-white rounded-2xl shadow-md ..." 
+             data-theme="${event.theme}" 
+             data-age="${event.age}" 
+             data-week="${event.semaine}">
+            </div>
+    `).join('');
+}
+
+// On lance le chargement au démarrage
+chargerDonnees();
+</body>
+</html>
