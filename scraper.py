@@ -49,4 +49,15 @@ if __name__ == "__main__":
     scraper = QuebecFamilyScraper()
     scraper.scrape_mnbaq()
     # On pourrait ajouter scraper.scrape_moulin() ici
+    # Force un événement test pour vérifier l'affichage
+self.events.append({
+    "titre": "Événement Test",
+    "lieu": "Partout à Québec",
+    "theme": "arts",
+    "age": "all",
+    "semaine": "1",
+    "prix": "Gratuit",
+    "image": "https://via.placeholder.com/500",
+    "description": "Si vous voyez ceci, le pipeline fonctionne !"
+})
     scraper.enregistrer_json()
