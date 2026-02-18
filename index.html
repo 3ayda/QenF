@@ -131,21 +131,14 @@ function afficherCartes(liste) {
     
     // 2. Fonction principale de chargement
     async function chargerDonnees() {
-        logToScreen("Étape 1: Lancement du fetch...");
         try {
             const reponse = await fetch('./evenements.json');
-            logToScreen("Étape 2: Réponse reçue (Status: " + reponse.status + ")");
-            
             if (!reponse.ok) {
                 throw new Error("Fichier introuvable sur le serveur (404)");
             }
-
             const donnees = await reponse.json();
-            logToScreen("Étape 3: JSON décodé (" + donnees.length + " items)");
-            
             // On appelle la fonction d'affichage
             afficherCartes(donnees);
-            logToScreen("Étape 4: Affichage terminé.");
 
         } catch (erreur) {
             logToScreen("!!! ERREUR : " + erreur.message);
@@ -155,8 +148,7 @@ function afficherCartes(liste) {
     // 3. LE DÉCLENCHEUR (Crucial pour iPad)
     // On attend que le document soit prêt avant de lancer le script
     document.addEventListener('DOMContentLoaded', () => {
-        logToScreen("Document prêt. Lancement du script...");
-        chargerDonnees();
+         chargerDonnees();
     });
 </script>
 
