@@ -12,30 +12,24 @@ class QuebecFamilyScraper:
         }
 
     def scrape_mnbaq(self):
-        """Extraction des données du MNBAQ"""
         url = "https://www.mnbaq.org/activites/famille"
-        try:
-            response = requests.get(url, headers=self.headers)
-            # Vérifie si la page a bien été téléchargée (Code 200)
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                # On cherche les conteneurs d'événements (Sélecteurs à ajuster selon le site)
-                for item in soup.select('.activity-card'):
-                    # Création du dictionnaire avec la ponctuation correcte (clés: valeurs)
-                    event_data = {
-                        "titre": item.select_one('.title').text.strip(),
-                        "lieu": "MNBAQ (Plaines d'Abraham)",
-                        "theme": "arts",  # On met en minuscule pour correspondre au JS
-                        "age": "3-12",     # Valeur par défaut si non trouvée
-                        "semaine": "2",    # Idem
-                        "prix": "Gratuit",
-                        "image": item.find('img')['src'] if item.find('img') else "https://via.placeholder.com/500",
-                        "description": item.select_one('.description').text.strip() if item.select_one('.description') else ""
-                    }
-                    self.events.append(event_data)
-        except Exception as e:
-            print(f"Erreur lors du scraping MNBAQ : {e}")
+        response = requests.get(url, headers=self.headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+    
+        # On cherche tous les articles ou blocs qui ressemblent à une carte
+        for card in soup.find_all(['article', 'div'], class_=lambda x: x and 'card' in x.lower()):    
+            titre = card.find(['h2', 'h3', 'h4'])
+            if titre:
+            self.events.append({
+                "titre": titre.text.strip(),
+                "lieu": "MNBAQ (Grande Allée)",
+                "theme": "arts",
+                "age": "3-12 ans",
+                "semaine": "1", # À lier avec la fonction de date plus haut
+                "prix": "Gratuit",
+                "image": card.find('img')['src'] if card.find('img') else "https://via.placeholder.com/500",
+                "description": "Atelier créatif pour toute la famille."
+            })
 
     def enregistrer_json(self):
         """Génère le fichier que le site Web va lire"""
