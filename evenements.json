@@ -1,12 +1,1 @@
-[
-    {
-        "titre": "Événement Test",
-        "lieu": "Partout à Québec",
-        "theme": "arts",
-        "age": "all",
-        "semaine": "1",
-        "prix": "Gratuit",
-        "image": "https://via.placeholder.com/500",
-        "description": "Si vous voyez ceci, le pipeline fonctionne !"
-    }
-]
+[]
