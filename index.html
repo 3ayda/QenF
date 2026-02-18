@@ -92,6 +92,18 @@
         if(debugBox) debugBox.innerHTML += "<br>> " + msg;
     }
 
+// Fonction pour AFFICHER les cartes (le template qu'on a fait ensemble)
+function afficherCartes(liste) {
+    const grille = document.getElementById('eventGrid');
+    grille.innerHTML = liste.map(event => `
+        <div class="event-card bg-white rounded-2xl shadow-md ..." 
+             data-theme="${event.theme}" 
+             data-age="${event.age}" 
+             data-week="${event.semaine}">
+            </div>
+    `).join('');
+}
+    
     // 2. Fonction principale de chargement
     async function chargerDonnees() {
         logToScreen("Étape 1: Lancement du fetch...");
