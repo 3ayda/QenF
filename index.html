@@ -12,22 +12,6 @@
     Démarrage du debug...
 </div>
 
-<script>
-    const debugBox = document.getElementById('debug-box');
-    function logToScreen(msg) {
-        debugBox.innerHTML += "<br>> " + msg;
-    }
-
-    // On détourne les erreurs vers notre boîte
-    window.onerror = (m) => logToScreen("ERREUR: " + m);
-    
-    // On peut aussi détourner les console.log
-    const oldLog = console.log;
-    console.log = (m) => {
-        logToScreen("LOG: " + JSON.stringify(m));
-        oldLog(m);
-    };
-</script>
 
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -102,38 +86,42 @@
     </main>
 
 <script>
-// On déclare une variable globale pour stocker les données une fois chargées
-let toutesLesDonnees = [];
-
-// Nouvelle fonction pour CHARGER les données depuis le fichier JSON
-async function chargerDonnees() {
-    try {
-        // Le navigateur va chercher le fichier généré par Python
-        const reponse = await fetch('./evenements.json');
-        toutesLesDonnees = await reponse.json();
-        
-        // Une fois chargé, on affiche les cartes
-        afficherCartes(toutesLesDonnees);
-    } catch (erreur) {
-        console.error("Erreur lors du chargement des données :", erreur);
-        document.getElementById('eventGrid').innerHTML = "<p>Erreur de chargement des activités...</p>";
+    // 1. La fonction de log (on s'assure qu'elle fonctionne)
+    const debugBox = document.getElementById('debug-box');
+    function logToScreen(msg) {
+        if(debugBox) debugBox.innerHTML += "<br>> " + msg;
     }
-}
 
-// Fonction pour AFFICHER les cartes (le template qu'on a fait ensemble)
-function afficherCartes(liste) {
-    const grille = document.getElementById('eventGrid');
-    grille.innerHTML = liste.map(event => `
-        <div class="event-card bg-white rounded-2xl shadow-md ..." 
-             data-theme="${event.theme}" 
-             data-age="${event.age}" 
-             data-week="${event.semaine}">
-            </div>
-    `).join('');
-}
+    // 2. Fonction principale de chargement
+    async function chargerDonnees() {
+        logToScreen("Étape 1: Lancement du fetch...");
+        try {
+            const reponse = await fetch('./evenements.json');
+            logToScreen("Étape 2: Réponse reçue (Status: " + reponse.status + ")");
+            
+            if (!reponse.ok) {
+                throw new Error("Fichier introuvable sur le serveur (404)");
+            }
 
-// On lance le chargement au démarrage
-chargerDonnees();
+            const donnees = await reponse.json();
+            logToScreen("Étape 3: JSON décodé (" + donnees.length + " items)");
+            
+            // On appelle la fonction d'affichage
+            afficherCartes(donnees);
+            logToScreen("Étape 4: Affichage terminé.");
+
+        } catch (erreur) {
+            logToScreen("!!! ERREUR : " + erreur.message);
+        }
+    }
+
+    // 3. LE DÉCLENCHEUR (Crucial pour iPad)
+    // On attend que le document soit prêt avant de lancer le script
+    document.addEventListener('DOMContentLoaded', () => {
+        logToScreen("Document prêt. Lancement du script...");
+        chargerDonnees();
+    });
 </script>
+
 </body>
 </html>
