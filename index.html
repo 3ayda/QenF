@@ -8,6 +8,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-50">
+    <div id="debug-box" style="background: #000; color: #0f0; font-family: monospace; font-size: 10px; position: fixed; bottom: 0; left: 0; width: 100%; height: 100px; overflow: scroll; z-index: 9999; opacity: 0.8; pointer-events: none;">
+    Démarrage du debug...
+</div>
+
+<script>
+    const debugBox = document.getElementById('debug-box');
+    function logToScreen(msg) {
+        debugBox.innerHTML += "<br>> " + msg;
+    }
+
+    // On détourne les erreurs vers notre boîte
+    window.onerror = (m) => logToScreen("ERREUR: " + m);
+    
+    // On peut aussi détourner les console.log
+    const oldLog = console.log;
+    console.log = (m) => {
+        logToScreen("LOG: " + JSON.stringify(m));
+        oldLog(m);
+    };
+</script>
 
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
