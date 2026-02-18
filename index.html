@@ -89,7 +89,7 @@ let toutesLesDonnees = [];
 async function chargerDonnees() {
     try {
         // Le navigateur va chercher le fichier généré par Python
-        const reponse = await fetch('evenements.json');
+        const reponse = await fetch('./evenements.json');
         toutesLesDonnees = await reponse.json();
         
         // Une fois chargé, on affiche les cartes
