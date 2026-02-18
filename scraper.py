@@ -21,14 +21,14 @@ class QuebecFamilyScraper:
             titre = card.find(['h2', 'h3', 'h4'])
             if titre:
             self.events.append({
-                "titre": titre.text.strip(),
-                "lieu": "MNBAQ (Grande Allée)",
-                "theme": "arts",
-                "age": "3-12 ans",
-                "semaine": "1", # À lier avec la fonction de date plus haut
-                "prix": "Gratuit",
-                "image": card.find('img')['src'] if card.find('img') else "https://via.placeholder.com/500",
-                "description": "Atelier créatif pour toute la famille."
+            "titre": titre.text.strip(),
+            "lieu": "MNBAQ (Grande Allée)",
+            "theme": "arts",
+            "age": "3-12 ans",
+            "semaine": "1", # À lier avec la fonction de date plus haut
+            "prix": "Gratuit",
+            "image": card.find('img')['src'] if card.find('img') else "https://via.placeholder.com/500",
+            "description": "Atelier créatif pour toute la famille."
             })
 
     def enregistrer_json(self):
