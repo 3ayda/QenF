@@ -1,1 +1,32 @@
-[]
+[
+    {
+        "titre": "Quoi faire en famille",
+        "lieu": "MNBAQ (Québec)",
+        "theme": "arts",
+        "age": "Famille",
+        "semaine": "1",
+        "prix": "Gratuit / Inclus",
+        "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+        "description": "Une activité culturelle pour la relâche au MNBAQ."
+    },
+    {
+        "titre": "Atelier",
+        "lieu": "MNBAQ (Québec)",
+        "theme": "arts",
+        "age": "Famille",
+        "semaine": "1",
+        "prix": "Gratuit / Inclus",
+        "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+        "description": "Une activité culturelle pour la relâche au MNBAQ."
+    },
+    {
+        "titre": "10 défis pour explorer le pavillon Pierre Lassonde en famille",
+        "lieu": "MNBAQ (Québec)",
+        "theme": "arts",
+        "age": "Famille",
+        "semaine": "1",
+        "prix": "Gratuit / Inclus",
+        "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+        "description": "Une activité culturelle pour la relâche au MNBAQ."
+    }
+]
