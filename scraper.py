@@ -9,7 +9,7 @@ class QuebecFamilyScraper:
         # Le "User-Agent" simule un navigateur pour ne pas être 
             
     def scrape_mnbaq(self):
-        url = "https://www.mnbaq.org/programmation/famille"
+        url = "https://www.mnbaq.org/programmation/familles"
         # On imite un iPad réel pour contourner les protections de base
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
