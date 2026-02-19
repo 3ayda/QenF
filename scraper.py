@@ -12,7 +12,7 @@ class QuebecFamilyScraper:
         }
 
     def scrape_mnbaq(self):
-        url = "https://www.mnbaq.org/en/programming/families"
+        url = "https://www.mnbaq.org/programmation/familles"
         try:
             response = requests.get(url, headers=self.headers)
             print(f"Status MNBAQ: {response.status_code}") # Doit être 200
