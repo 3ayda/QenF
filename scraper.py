@@ -12,44 +12,54 @@ class QuebecFamilyScraper:
         }
 
     def scrape_mnbaq(self):
-        url = "https://www.mnbaq.org/programmation/familles"
+        url = "https://www.mnbaq.org/programmation/famille"
         try:
-            response = requests.get(url, headers=self.headers)
-            print(f"Status MNBAQ: {response.status_code}") # Doit être 200
-        
+            response = requests.get(url, headers=self.headers, timeout=10)
             soup = BeautifulSoup(response.text, 'html.parser')
-        
-            # Test 1: On cherche TOUS les liens qui contiennent "activites"
-            liens = soup.find_all('a', href=True)
-            activites_potentielles = [l for l in liens if '/activites/' in l['href']]
-            print(f"Nombre de liens d'activités trouvés: {len(activites_potentielles)}")
-
-            # Test 2: Recherche par balise générique (plus robuste)
-            # On cherche des articles ou des div qui ont une classe contenant 'card'
-            cards = soup.find_all(['article', 'div'], class_=lambda x: x and 'card' in x.lower())
-            print(f"Nombre de cartes trouvées: {len(cards)}")
-
-            for item in cards:
-                titre_el = item.find(['h2', 'h3', 'h4', 'span'], class_=lambda x: x and 'title' in x.lower())
-                if not titre_el:
-                    titre_el = item.find(['h2', 'h3']) # Plan B
-
-                if titre_el:
-                    titre = titre_el.text.strip()
+            
+            # On cherche tous les conteneurs qui pourraient être une carte
+            # (souvent des balises <article> ou des <div> avec beaucoup de contenu)
+            potentiels = soup.find_all(['article', 'div', 'section'])
+            
+            for item in potentiels:
+                # On cherche un titre à l'intérieur
+                titre_el = item.find(['h2', 'h3', 'h4'])
+                if not titre_el or len(titre_el.text.strip()) < 3:
+                    continue
+                    
+                titre = titre_el.text.strip()
+                
+                # FILTRE : On ne veut que les trucs de famille/ateliers
+                mots_cles = ['famille', 'atelier', 'enfant', 'relâche', 'dimanche', 'créatif']
+                if any(mot in titre.lower() for mot in mots_cles):
+                    
                     # On évite les doublons
-                    if not any(e['titre'] == titre for e in self.events):
-                        self.events.append({
-                            "titre": titre,
-                            "lieu": "MNBAQ (Grande Allée)",
-                            "theme": "arts",
-                            "age": "Famille",
-                            "semaine": "1",
-                            "prix": "Gratuit",
-                            "image": item.find('img')['src'] if item.find('img') else "https://via.placeholder.com/500",
-                            "description": "Consultez le site du MNBAQ pour les détails de cet atelier."
-                        })
+                    if any(e['titre'] == titre for e in self.events):
+                        continue
+    
+                    # On tente de trouver une image dans ce bloc
+                    img_el = item.find('img')
+                    img_url = img_el['src'] if img_el and img_el.has_attr('src') else "https://via.placeholder.com/500x300?text=MNBAQ"
+                    
+                    # Si l'URL de l'image est relative (ex: /img.jpg), on ajoute le domaine
+                    if img_url.startswith('/'):
+                        img_url = "https://www.mnbaq.org" + img_url
+    
+                    self.events.append({
+                        "titre": titre,
+                        "lieu": "MNBAQ (Plaines d'Abraham)",
+                        "theme": "arts",
+                        "age": "Famille",
+                        "semaine": "1", # On pourra affiner avec la date plus tard
+                        "prix": "Gratuit / Inclus",
+                        "image": img_url,
+                        "description": "Une activité culturelle pour stimuler la créativité des petits et grands."
+                    })
+            
+            print(f"Bulldozer a trouvé {len(self.events)} activités au MNBAQ.")
+    
         except Exception as e:
-            print(f"Erreur MNBAQ : {e}")
+            print(f"Erreur Bulldozer : {e}")
 
     def enregistrer_json(self):
         """Génère le fichier que le site Web va lire"""
