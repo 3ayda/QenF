@@ -373,7 +373,7 @@ def main():
             "prix": prix,
             "image": image,
             "description": description,
-          #    "URL": card["url"],
+            "URL": card["url"],
         }
         evenements.append(evenement)
 
