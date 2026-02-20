@@ -1,83 +1,390 @@
+"""
+Scraper – Activités Familles MNBAQ
+Collecte les événements familles sur https://www.mnbaq.org/programmation/familles
+et produit un fichier evenements.json structuré.
+
+Filtre automatique : mois courant + mois suivant (basé sur date d'exécution).
+
+Usage : python scraper_mnbaq.py
+"""
+
+import json
+import time
+import re
+import sys
+from datetime import date, datetime
+from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
-import json
 
-class QuebecFamilyScraper:
-    def __init__(self):
-        # Liste pour stocker nos dictionnaires d'événements
-        self.events = []
-        # Le "User-Agent" simule un navigateur pour ne pas être 
-            
-    def scrape_mnbaq(self):
-        url = "https://www.mnbaq.org/programmation/familles"
-        # On imite un iPad réel pour contourner les protections de base
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'fr-ca,fr;q=0.9',
-            'Referer': 'https://www.google.com/'
-        }
-    
+BASE_URL = "https://www.mnbaq.org"
+LIST_URL = f"{BASE_URL}/programmation/familles"
+OUTPUT_FILE = "evenements.json"
+
+# ─────────────────────────────────────────────
+# Fenêtre de dates : mois courant + mois suivant
+# ─────────────────────────────────────────────
+_today = date.today()
+_next_month = _today.month % 12 + 1
+_next_year  = _today.year + (_today.month // 12)
+
+DATE_MIN = date(_today.year, _today.month, 1)
+DATE_MAX = date(
+    _next_year,
+    _next_month,
+    [31,28+(_next_year%4==0 and (_next_year%100!=0 or _next_year%400==0)),
+     31,30,31,30,31,31,30,31,30,31][_next_month - 1]
+)
+
+MONTHS_FR = {
+    "janvier": 1, "février": 2, "mars": 3, "avril": 4,
+    "mai": 5, "juin": 6, "juillet": 7, "août": 8,
+    "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12,
+}
+
+def parse_date_fr(text: str):
+    """Parse 'DD mois YYYY' ou 'DD mois' (année courante/suivante)."""
+    text = text.lower().strip()
+    m = re.search(r"(\d{1,2})\s+(\w+)\s+(\d{4})", text)
+    if m:
+        day, month_str, year = int(m.group(1)), m.group(2), int(m.group(3))
+        month = MONTHS_FR.get(month_str)
+        if month:
+            try:
+                return date(year, month, day)
+            except ValueError:
+                pass
+    m = re.search(r"(\d{1,2})\s+(\w+)", text)
+    if m:
+        day, month_str = int(m.group(1)), m.group(2)
+        month = MONTHS_FR.get(month_str)
+        if month:
+            for year in (_today.year, _today.year + 1):
+                try:
+                    return date(year, month, day)
+                except ValueError:
+                    pass
+    return None
+
+
+def event_in_window(dates_text: str) -> bool:
+    """
+    Retourne True si l'événement a au moins une date dans la fenêtre
+    DATE_MIN..DATE_MAX. Gère les plages 'DD mois YYYY au DD mois YYYY'
+    et les dates isolées. Si aucune date n'est parsée, garde l'événement.
+    """
+    dt = dates_text.lower()
+    m = re.search(
+        r"(\d{1,2}\s+\w+\s+\d{4})\s+au\s+(\d{1,2}\s+\w+\s+\d{4})", dt
+    )
+    if m:
+        start = parse_date_fr(m.group(1))
+        end   = parse_date_fr(m.group(2))
+        if start and end:
+            return start <= DATE_MAX and end >= DATE_MIN
+    d = parse_date_fr(dt)
+    if d:
+        return DATE_MIN <= d <= DATE_MAX
+    return True   # date non parsée → on garde par prudence
+
+
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/122.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "fr-CA,fr;q=0.9",
+}
+
+# ─────────────────────────────────────────────
+# Mapping mots-clés → thème normalisé
+# ─────────────────────────────────────────────
+THEME_MAP = {
+    "atelier":   "arts",
+    "collage":   "arts",
+    "dessin":    "arts",
+    "peinture":  "arts",
+    "sculpture": "arts",
+    "cinéma":    "cinéma",
+    "film":      "cinéma",
+    "visite":    "visite guidée",
+    "guidée":    "visite guidée",
+    "musique":   "musique",
+    "concert":   "musique",
+    "conférence":"conférence",
+    "mieux-être":"art et mieux-être",
+    "événement": "événement spécial",
+    "spécial":   "événement spécial",
+    "exposition": "exposition",
+}
+
+def detect_theme(titre: str, type_activite: str) -> str:
+    combined = (titre + " " + type_activite).lower()
+    for keyword, theme in THEME_MAP.items():
+        if keyword in combined:
+            return theme
+    return "arts"  # défaut
+
+
+def detect_age(description: str, titre: str) -> str:
+    text = (description + " " + titre).lower()
+    m = re.search(r"(\d+)\s*(?:ans?|year)", text)
+    if m:
+        age = int(m.group(1))
+        if age <= 5:
+            return "0-5 ans"
+        elif age <= 12:
+            return f"{age} ans et +"
+        else:
+            return f"{age} ans et +"
+    if "poussette" in text or "bébé" in text or "bambin" in text:
+        return "0-3 ans"
+    if "famille" in text or "enfant" in text:
+        return "Tous"
+    return "Tous"
+
+
+def normalize_price(raw: str) -> str:
+    if not raw:
+        return "Voir le site"
+    raw = raw.strip()
+    low = raw.lower()
+    if "gratuit" in low and "inclus" in low:
+        return "Gratuit / Inclus"
+    if "gratuit" in low:
+        return "Gratuit"
+    if "inclus" in low:
+        return "Inclus avec le billet d'entrée"
+    return raw
+
+
+def fetch_page(url: str, retries: int = 3) -> BeautifulSoup | None:
+    for attempt in range(retries):
         try:
-            response = requests.get(url, headers=self.headers, timeout=15)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # ÉTAPE 1 : On ramasse TOUS les titres H2, H3 et H4 de la page
-            # C'est là que se cachent les noms des activités
-            titres_potentiels = soup.find_all(['h2', 'h3', 'h4'])
-            
-            print(f"DEBUG : J'ai trouvé {len(titres_potentiels)} titres au total sur la page.")
-    
-            for el in titres_potentiels:
-                titre = el.get_text().strip()
-                
-                # ÉTAPE 2 : Filtres simples pour garder les vraies activités
-                if len(titre) < 10: continue # Trop court (ex: "Atelier")
-                if "famille" not in titre.lower() and "atelier" not in titre.lower() and "défi" not in titre.lower():
-                    # On garde quand même si c'est un titre important (H2 ou H3)
-                    if el.name not in ['h2', 'h3']: continue
-    
-                # Éviter les doublons
-                if any(e['titre'] == titre for e in self.events): continue
-    
-                # ÉTAPE 3 : Trouver l'image et le lien
-                # On cherche l'image la plus proche du titre
-                parent = el.find_parent(['div', 'article', 'section'])
-                img_url = "https://via.placeholder.com/500x300?text=MNBAQ"
-                if parent:
-                    img = parent.find('img')
-                    if img:
-                        img_url = img.get('data-src') or img.get('src') or img_url
-                        if img_url.startswith('/'): img_url = "https://www.mnbaq.org" + img_url
-    
-                # ÉTAPE 4 : Ajouter à la liste
-                self.events.append({
-                    "titre": titre,
-                    "lieu": "MNBAQ (Grande Allée)",
-                    "theme": "arts",
-                    "age": "Famille",
-                    "semaine": "1",
-                    "prix": "Gratuit / Inclus",
-                    "image": img_url,
-                    "description": "Une activité culturelle au Musée national des beaux-arts du Québec."
-                })
-    
-            print(f"Résultat final : {len(self.events)} activités trouvées.")
-    
-        except Exception as e:
-            print(f"Erreur MNBAQ : {e}")
-            
+            r = requests.get(url, headers=HEADERS, timeout=20)
+            r.raise_for_status()
+            return BeautifulSoup(r.text, "html.parser")
+        except requests.RequestException as e:
+            print(f"  ⚠️  Erreur ({attempt+1}/{retries}) : {e}")
+            time.sleep(2 ** attempt)
+    return None
 
-    def enregistrer_json(self):
-        """Génère le fichier que le site Web va lire"""
-        # La ponctuation ici est vitale : indent=4 pour la lisibilité, ensure_ascii=False pour les accents québécois
-        with open('evenements.json', 'w', encoding='utf-8') as f:
-            json.dump(self.events, f, ensure_ascii=False, indent=4)
-        print(f"Succès ! {len(self.events)} événements enregistrés dans evenements.json")
 
-# --- EXECUTION ---
+def scrape_event_detail(url: str) -> dict:
+    """Récupère les infos détaillées d'un événement."""
+    soup = fetch_page(url)
+    if not soup:
+        return {}
+
+    # Description
+    desc_tag = soup.select_one("div.field--name-field-description, section.about, div.about, main p")
+    description = ""
+    if desc_tag:
+        description = desc_tag.get_text(" ", strip=True)
+    else:
+        # Cherche le premier <p> dans le main
+        main = soup.find("main")
+        if main:
+            ps = main.find_all("p")
+            description = " ".join(p.get_text(" ", strip=True) for p in ps[:3])
+
+    # Image haute résolution (cherche img dans le hero/banner)
+    image = ""
+    hero_img = soup.select_one("main img")
+    if hero_img:
+        image = hero_img.get("src", "")
+
+    # Lieu / pavillon
+    lieu_tags = soup.select("main a[href*='pavillon'], main a[href*='plan']")
+    lieu_texts = [t.get_text(strip=True) for t in lieu_tags]
+    lieu = ", ".join(dict.fromkeys(lieu_texts)) if lieu_texts else "MNBAQ"
+    if not lieu:
+        lieu = "MNBAQ"
+
+    # Prix – cherche dans les infos
+    prix_raw = ""
+    for tag in soup.select("main p, main li, main div"):
+        t = tag.get_text(" ", strip=True)
+        if any(k in t.lower() for k in ["$", "gratuit", "inclus", "membre"]):
+            prix_raw = t
+            break
+
+    # Dates – cherche "DD mois YYYY" dans le contenu principal
+    dates_text = ""
+    for tag in soup.select("main p, main li, main time, main div"):
+        t = tag.get_text(" ", strip=True)
+        if re.search(r"\d{1,2}\s+\w+\s+\d{4}", t):
+            dates_text = t
+            break
+
+    return {
+        "description": description[:400],
+        "image": image,
+        "lieu_detail": lieu,
+        "prix_raw": prix_raw,
+        "dates_text": dates_text,
+    }
+
+
+def parse_listing_page(soup: BeautifulSoup) -> list[dict]:
+    """Extrait les cartes d'événements d'une page de listing."""
+    events = []
+
+    # Chaque événement est dans un article ou une li avec un lien "En savoir plus"
+    links = soup.select("a[href*='/programmation/']")
+    seen_urls = set()
+
+    for link in links:
+        href = link.get("href", "")
+        text = link.get_text(strip=True)
+
+        # Filtre : liens "En savoir plus sur ..."
+        if not text.startswith("En savoir plus sur"):
+            continue
+
+        full_url = urljoin(BASE_URL, href)
+        if full_url in seen_urls:
+            continue
+        seen_urls.add(full_url)
+
+        # Remonte pour trouver le bloc parent de la carte
+        card = link.find_parent("li") or link.find_parent("article") or link.find_parent("div")
+
+        titre = text.replace("En savoir plus sur", "").strip()
+
+        # Type d'activité (Atelier, Visite guidée, etc.)
+        type_tag = card.find(["h2", "h3", "h4", "span", "p"]) if card else None
+        type_activite = type_tag.get_text(strip=True) if type_tag else ""
+
+        # Prix depuis la carte
+        prix_card = ""
+        if card:
+            for t in card.find_all(string=True):
+                s = t.strip()
+                if any(k in s.lower() for k in ["$", "gratuit", "inclus", "membre"]):
+                    prix_card = s
+                    break
+
+        events.append({
+            "titre": titre,
+            "url": full_url,
+            "type_activite": type_activite,
+            "prix_card": prix_card,
+        })
+
+    return events
+
+
+def get_total_pages(soup: BeautifulSoup) -> int:
+    # Cherche la dernière page dans la pagination
+    pagination = soup.select("a[href*='page=']")
+    max_page = 1
+    for a in pagination:
+        m = re.search(r"page=(\d+)", a.get("href", ""))
+        if m:
+            max_page = max(max_page, int(m.group(1)))
+    return max_page
+
+
+def build_semaine(index: int) -> str:
+    """Attribue un numéro de semaine fictif basé sur l'ordre de scraping (1-based)."""
+    return str((index // 7) + 1)
+
+
+def main():
+    print("🔍 Démarrage du scraping MNBAQ – Activités Familles")
+    print(f"   Source : {LIST_URL}\n")
+
+    # ── Étape 1 : récupérer toutes les pages de listing ──
+    first_page = fetch_page(LIST_URL)
+    if not first_page:
+        print("❌ Impossible d'accéder à la page principale.")
+        sys.exit(1)
+
+    total_pages = get_total_pages(first_page)
+    print(f"📄 {total_pages} page(s) de résultats détectée(s).")
+
+    all_cards = []
+    all_cards.extend(parse_listing_page(first_page))
+
+    for page_num in range(2, total_pages + 1):
+        url = f"{LIST_URL}?page={page_num}"
+        print(f"   → Page {page_num}/{total_pages} : {url}")
+        soup = fetch_page(url)
+        if soup:
+            all_cards.extend(parse_listing_page(soup))
+        time.sleep(0.8)  # politesse
+
+    # Dédoublonnage par URL
+    seen = set()
+    unique_cards = []
+    for c in all_cards:
+        if c["url"] not in seen:
+            seen.add(c["url"])
+            unique_cards.append(c)
+
+    print(f"\n✅ {len(unique_cards)} événement(s) unique(s) trouvé(s) dans le listing.")
+    print(f"📅 Filtre : {DATE_MIN.strftime('%d %B %Y')} → {DATE_MAX.strftime('%d %B %Y')}\n")
+
+    # ── Étape 2 : récupérer les détails + filtrer par date ──
+    evenements = []
+    skipped = 0
+    for i, card in enumerate(unique_cards):
+        print(f"   [{i+1}/{len(unique_cards)}] {card['titre']}")
+        detail = scrape_event_detail(card["url"])
+        time.sleep(0.6)
+
+        # ── Filtre de date ──
+        dates_text = detail.get("dates_text", "")
+        if dates_text and not event_in_window(dates_text):
+            print(f"        ⏩ Hors fenêtre ({dates_text[:60]}) – ignoré.")
+            skipped += 1
+            continue
+
+        prix_raw = detail.get("prix_raw") or card.get("prix_card", "")
+        prix = normalize_price(prix_raw)
+
+        lieu_detail = detail.get("lieu_detail", "MNBAQ")
+        if "Lassonde" in lieu_detail or "lassonde" in lieu_detail:
+            lieu = "MNBAQ – Pavillon Pierre Lassonde"
+        elif "Grande Allée" in lieu_detail or "Baillairgé" in lieu_detail:
+            lieu = "MNBAQ – Pavillon Baillairgé (Grande Allée)"
+        else:
+            lieu = "MNBAQ"
+
+        description = detail.get("description", "")
+        if not description:
+            description = f"Activité au Musée national des beaux-arts du Québec : {card['titre']}."
+
+        image = detail.get("image", "")
+        if not image:
+            image = "https://via.placeholder.com/500x300?text=MNBAQ"
+
+        age = detect_age(description, card["titre"])
+        theme = detect_theme(card["titre"], card.get("type_activite", ""))
+
+        evenement = {
+            "titre": card["titre"],
+            "lieu": lieu,
+            "theme": theme,
+            "age": age,
+            "semaine": build_semaine(len(evenements)),
+            "prix": prix,
+            "image": image,
+            "description": description,
+          #    "URL": card["url"],
+        }
+        evenements.append(evenement)
+
+  #   ── Étape 3 : écriture du JSON ──
+    output = {"evenements": evenements}
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+
+    print(f"\n🎉 Terminé ! {len(evenements)} événement(s) exporté(s) dans « {OUTPUT_FILE} » ({skipped} hors fenêtre ignoré(s)).")
+    return OUTPUT_FILE
+
+
 if __name__ == "__main__":
-    scraper = QuebecFamilyScraper()
-    scraper.scrape_mnbaq()
-    # On pourrait ajouter scraper.scrape_moulin() ici
-    scraper.enregistrer_json()
+    main()
