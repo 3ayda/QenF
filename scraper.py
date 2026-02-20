@@ -171,7 +171,7 @@ def proxy_image(url: str) -> str:
     return f"https://wsrv.nl/?url={quote(url, safe='')}&w=600&output=webp"
 
 
-
+def fetch_page(url: str, retries: int = 3):
     for attempt in range(retries):
         try:
             r = requests.get(url, headers=HEADERS, timeout=20)
