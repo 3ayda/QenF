@@ -4,6 +4,7 @@ Collecte les événements familles sur https://www.mnbaq.org/programmation/famil
 et produit un fichier evenements.json structuré.
 
 Filtre automatique : mois courant + mois suivant (basé sur date d'exécution).
+Les images CloudFront (signées/expirables) sont converties en URLs stables via wsrv.nl.
 
 Usage : python scraper_mnbaq.py
 """
@@ -13,7 +14,7 @@ import time
 import re
 import sys
 from datetime import date, datetime
-from urllib.parse import urljoin
+from urllib.parse import urljoin, quote
 import requests
 from bs4 import BeautifulSoup
 
@@ -159,7 +160,18 @@ def normalize_price(raw: str) -> str:
     return raw
 
 
-def fetch_page(url: str, retries: int = 3):
+def proxy_image(url: str) -> str:
+    """
+    Convertit une URL d'image CloudFront (signée/expirable) en URL stable
+    via wsrv.nl — un CDN proxy gratuit qui met en cache l'image indéfiniment.
+    Format : https://wsrv.nl/?url=<url encodée>&w=600&output=webp
+    """
+    if not url:
+        return url
+    return f"https://wsrv.nl/?url={quote(url, safe='')}&w=600&output=webp"
+
+
+
     for attempt in range(retries):
         try:
             r = requests.get(url, headers=HEADERS, timeout=20)
@@ -399,7 +411,9 @@ def main():
 
         image = detail.get("image", "")
         if not image:
-            image = "https://via.placeholder.com/500x300?text=MNBAQ"
+            image = "https://wsrv.nl/?url=https%3A%2F%2Fwww.mnbaq.org%2Fresources%2Fassets%2Fimages%2Fog-image.jpg&w=600&output=webp"
+        else:
+            image = proxy_image(image)
 
         age = detect_age(description, card["titre"])
         theme = detect_theme(card["titre"], card.get("type_activite", ""))
