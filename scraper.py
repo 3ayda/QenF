@@ -177,51 +177,98 @@ def scrape_event_detail(url: str) -> dict:
     if not soup:
         return {}
 
-    # Description
-    desc_tag = soup.select_one("div.field--name-field-description, section.about, div.about, main p")
-    description = ""
-    if desc_tag:
-        description = desc_tag.get_text(" ", strip=True)
-    else:
-        # Cherche le premier <p> dans le main
-        main = soup.find("main")
-        if main:
-            ps = main.find_all("p")
-            description = " ".join(p.get_text(" ", strip=True) for p in ps[:3])
+    main = soup.find("main")
+    if not main:
+        return {}
 
-    # Image haute résolution (cherche img dans le hero/banner)
+    # ── Image ──
+    # Premier <img> cloudfront dans le main, avant la section "Autres activités"
     image = ""
-    hero_img = soup.select_one("main img")
-    if hero_img:
-        image = hero_img.get("src", "")
+    autres_h2 = None
+    for h2 in main.find_all("h2"):
+        if "autres activit" in h2.get_text(strip=True).lower():
+            autres_h2 = h2
+            break
+    for img in main.find_all("img"):
+        if autres_h2 and autres_h2 in img.find_all_previous("h2"):
+            break
+        src = img.get("src", "")
+        if src and "cloudfront" in src and "newsletter" not in src:
+            image = src
+            break
 
-    # Lieu / pavillon
-    lieu_tags = soup.select("main a[href*='pavillon'], main a[href*='plan']")
-    lieu_texts = [t.get_text(strip=True) for t in lieu_tags]
-    lieu = ", ".join(dict.fromkeys(lieu_texts)) if lieu_texts else "MNBAQ"
-    if not lieu:
-        lieu = "MNBAQ"
+    # ── Description ──
+    # Paragraphes sous le <h2> "À propos", sans inclure le titre lui-même
+    description = ""
+    for h2 in main.find_all("h2"):
+        if "à propos" in h2.get_text(strip=True).lower():
+            parts = []
+            for sib in h2.find_next_siblings():
+                if sib.name == "h2":
+                    break
+                if sib.name == "p":
+                    parts.append(sib.get_text(" ", strip=True))
+            description = " ".join(parts)
+            break
+    # Fallback : premier <p> suffisamment long
+    if not description:
+        for p in main.find_all("p"):
+            t = p.get_text(" ", strip=True)
+            if len(t) > 40:
+                description = t
+                break
 
-    # Prix – cherche dans les infos
+    # ── Section Informations (dates, prix, lieu) ──
+    info_text = ""
+    for h2 in main.find_all("h2"):
+        if "information" in h2.get_text(strip=True).lower():
+            parts = []
+            for sib in h2.find_next_siblings():
+                if sib.name == "h2":
+                    break
+                t = sib.get_text(" ", strip=True)
+                if t:
+                    parts.append(t)
+            info_text = " \n".join(parts)
+            break
+
+    # ── Prix ──
     prix_raw = ""
-    for tag in soup.select("main p, main li, main div"):
-        t = tag.get_text(" ", strip=True)
-        if any(k in t.lower() for k in ["$", "gratuit", "inclus", "membre"]):
-            prix_raw = t
+    for line in info_text.splitlines():
+        line = line.strip()
+        if any(k in line.lower() for k in ["$", "gratuit", "inclus", "membre"]):
+            prix_raw = line
             break
 
-    # Dates – cherche "DD mois YYYY" dans le contenu principal
+    # ── Dates ──
     dates_text = ""
-    for tag in soup.select("main p, main li, main time, main div"):
-        t = tag.get_text(" ", strip=True)
-        if re.search(r"\d{1,2}\s+\w+\s+\d{4}", t):
-            dates_text = t
+    m = re.search(r"\d{1,2}\s+\w+\s+\d{4}[^\n]*(?:\s+au\s+\d{1,2}\s+\w+\s+\d{4})?", info_text)
+    if m:
+        dates_text = m.group(0).strip()
+
+    # ── Lieu ──
+    # Liens vers le plan du pavillon dans la section Informations
+    lieu = "MNBAQ"
+    lieu_names = []
+    for h2 in main.find_all("h2"):
+        if "information" in h2.get_text(strip=True).lower():
+            for a in h2.find_next_siblings():
+                if a.name == "h2":
+                    break
+                for link in (a.find_all("a") if hasattr(a, "find_all") else []):
+                    href = link.get("href", "")
+                    txt = link.get_text(strip=True)
+                    if ("pavillon" in href or "plan" in href) and txt:
+                        if "pratiques" not in txt.lower():
+                            lieu_names.append(txt)
             break
+    if lieu_names:
+        lieu = "MNBAQ – " + lieu_names[0]
 
     return {
         "description": description[:400],
         "image": image,
-        "lieu_detail": lieu,
+        "lieu": lieu,
         "prix_raw": prix_raw,
         "dates_text": dates_text,
     }
@@ -345,14 +392,7 @@ def main():
         prix_raw = detail.get("prix_raw") or card.get("prix_card", "")
         prix = normalize_price(prix_raw)
 
-        lieu_detail = detail.get("lieu_detail", "MNBAQ")
-        if "Lassonde" in lieu_detail or "lassonde" in lieu_detail:
-            lieu = "MNBAQ – Pavillon Pierre Lassonde"
-        elif "Grande Allée" in lieu_detail or "Baillairgé" in lieu_detail:
-            lieu = "MNBAQ – Pavillon Baillairgé (Grande Allée)"
-        else:
-            lieu = "MNBAQ"
-
+        lieu = detail.get("lieu") or "MNBAQ"
         description = detail.get("description", "")
         if not description:
             description = f"Activité au Musée national des beaux-arts du Québec : {card['titre']}."
@@ -378,9 +418,8 @@ def main():
         evenements.append(evenement)
 
     # ── Étape 3 : écriture du JSON ──
-    output = {"evenements": evenements}
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
+        json.dump(evenements, f, ensure_ascii=False, indent=2)
 
     print(f"\n🎉 Terminé ! {len(evenements)} événement(s) exporté(s) dans « {OUTPUT_FILE} » ({skipped} hors fenêtre ignoré(s)).")
     return OUTPUT_FILE
