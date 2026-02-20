@@ -22,56 +22,57 @@ class QuebecFamilyScraper:
             response = requests.get(url, headers=self.headers, timeout=15)
             soup = BeautifulSoup(response.text, 'html.parser')
             
-            # --- NOUVELLE STRATÉGIE : LE SCANNER ---
-            # On cherche tout ce qui a la classe "title" ou qui ressemble à un titre d'activité
-            # Les sites modernes utilisent souvent des classes comme 'c-card__title'
-            potential_titles = soup.find_all(class_=lambda x: x and ('title' in x or 'activity' in x))
-            
-            if not potential_titles:
-                # Plan B : On cherche toutes les balises h2 et h3 sans distinction
-                potential_titles = soup.find_all(['h2', 'h3'])
+            # On cherche les conteneurs de cartes (le MNBAQ utilise souvent des <article> ou des classes 'c-card')
+            # On va chercher tous les blocs qui contiennent un lien ET une image
+            conteneurs = soup.find_all(['article', 'div'], class_=lambda x: x and ('card' in x or 'activity' in x))
     
-            for element in potential_titles:
-                titre = element.get_text().strip()
+            for card in conteneurs:
+                # 1. Trouver le titre (souvent un h2 ou h3 avec une classe title)
+                titre_el = card.find(['h2', 'h3', 'h4', 'a'], class_=lambda x: x and 'title' in x.lower())
+                if not titre_el:
+                    titre_el = card.find(['h2', 'h3'])
                 
-                # On cherche des mots-clés pour filtrer les menus/liens inutiles
-                if len(titre) > 5 and any(word in titre.lower() for word in ['famille', 'atelier', 'créatif', 'relâche']):
-                    
-                    # Éviter les doublons
-                    if any(e['titre'] == titre for e in self.events): continue
+                if not titre_el: continue
+                titre = titre_el.get_text().strip()
     
-                    # On tente de trouver l'image la plus proche de ce titre
-                    parent = element.find_parent(['div', 'article', 'section'])
-                    img_url = "https://via.placeholder.com/500x300?text=MNBAQ"
-                    if parent:
-                        img = parent.find('img')
-                        if img and img.has_attr('src'):
-                            img_url = img['src']
-                            if img_url.startswith('/'): img_url = "https://www.mnbaq.org" + img_url
+                # --- FILTRE DE QUALITÉ ---
+                # On ignore les titres trop courts ou trop génériques
+                if len(titre) < 10 or titre.lower() in ["atelier", "quoi faire en famille", "activités"]:
+                    continue
     
-                    self.events.append({
-                        "titre": titre,
-                        "lieu": "MNBAQ (Québec)",
-                        "theme": "arts",
-                        "age": "Famille",
-                        "semaine": "1",
-                        "prix": "Gratuit / Inclus",
-                        "image": img_url,
-                        "description": "Une activité culturelle pour la relâche au MNBAQ."
-                    })
+                # 2. Trouver l'image (Gestion du Lazy Loading)
+                img_el = card.find('img')
+                img_url = "https://via.placeholder.com/500x300?text=MNBAQ"
+                if img_el:
+                    # On teste plusieurs sources possibles d'images sur les sites modernes
+                    img_url = img_el.get('data-src') or img_el.get('srcset') or img_el.get('src') or img_url
+                    # Nettoyage si c'est une liste d'images (srcset)
+                    if ',' in img_url: img_url = img_url.split(',')[0].split(' ')[0]
+                    if img_url.startswith('/'): img_url = "https://www.mnbaq.org" + img_url
     
-            # --- DIAGNOSTIC FINAL DANS LE LOG ---
-            if len(self.events) == 0:
-                print("DIAGNOSTIC : Aucune balise trouvée. Le site est probablement 100% JavaScript.")
-                # On affiche les 10 premières classes CSS trouvées pour nous aider
-                classes = [c for tag in soup.find_all(True) for c in tag.get('class', [])]
-                print(f"Classes trouvées sur la page : {list(set(classes))[:15]}")
-            else:
-                print(f"Succès : {len(self.events)} activités trouvées !")
+                # 3. Trouver la description (le texte qui suit le titre)
+                desc_el = card.find(['p', 'div'], class_=lambda x: x and 'description' in x.lower())
+                description = desc_el.get_text().strip() if desc_el else "Découvrez cette activité familiale au musée."
+                if len(description) > 150: description = description[:147] + "..."
+    
+                # Éviter les doublons
+                if any(e['titre'] == titre for e in self.events): continue
+    
+                self.events.append({
+                    "titre": titre,
+                    "lieu": "MNBAQ (Grande Allée)",
+                    "theme": "arts",
+                    "age": "Tout âge",
+                    "semaine": "1",
+                    "prix": "Gratuit / Inclus",
+                    "image": img_url,
+                    "description": description
+                })
+    
+            print(f"Scraping terminé : {len(self.events)} activités réelles trouvées.")
     
         except Exception as e:
-            print(f"Erreur : {e}")
-        
+            print(f"Erreur : {e}")  
 
     def enregistrer_json(self):
         """Génère le fichier que le site Web va lire"""
