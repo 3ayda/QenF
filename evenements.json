@@ -1,147 +1,145 @@
-{
-  "evenements": [
-    {
-      "titre": "Collage solaire",
-      "lieu": "MNBAQ",
-      "theme": "arts",
-      "age": "Tous",
-      "semaine": "1",
-      "prix": "7 $ par personne",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos L'œuvre Mandala Galaxea (2012-2013) créée par l'artiste du verre Alex Anagnostou donne à voir un univers à la fois immense et minuscule. Corail, cristal ou galaxie? Laissez-vous inspirer par cette œuvre aux fins détails, et à votre tour d'explorer les effets de transparence et de superposition.",
-      "URL": "https://www.mnbaq.org/programmation/ateliers-et-cours/collage-solaire"
-    },
-    {
-      "titre": "Muséo-poussette",
-      "lieu": "MNBAQ",
-      "theme": "visite guidée",
-      "age": "0-3 ans",
-      "semaine": "1",
-      "prix": "Membre : 7 $ | Régulier : 10 $",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos Profitez de la tranquillité des matinées au Musée pour visiter une exposition en compagnie de votre poupon et de notre guide. Nous vous proposons une formule de visite sur mesure, dans une atmosphère accueillante et détendue, d’une durée écourtée et avec un groupe de taille réduite. Douceur et découvertes au rendez-vous! 27 février : Hyperréalisme. Ceci n'est pas un corps 18 mars : Hyperr",
-      "URL": "https://www.mnbaq.org/programmation/visites-guidees/museo-poussette-2026"
-    },
-    {
-      "titre": "Visite guidée Hyperréalisme. Ceci n'est pas un corps",
-      "lieu": "MNBAQ",
-      "theme": "visite guidée",
-      "age": "Tous",
-      "semaine": "1",
-      "prix": "Gratuit",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos En compagnie de nos guides, plongez dans l’univers saisissant de l’exposition Hyperréalisme. Ceci n’est pas un corps . Cette visite vous mènera au cœur d’un mouvement où le corps devient terrain d’exploration, entre virtuosité technique, illusions déroutantes et réflexions profondes sur notre rapport au réel. Une occasion de découvrir des œuvres riches en expérimentations, en remises en q",
-      "URL": "https://www.mnbaq.org/programmation/visites-guidees/visite-guidee-hyperrealisme"
-    },
-    {
-      "titre": "Still Life: Ron Mueck at work",
-      "lieu": "MNBAQ",
-      "theme": "cinéma",
-      "age": "Tous",
-      "semaine": "1",
-      "prix": "Membre : 0 $ | Régulier : 12 $",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos Un petit atelier à Londres. Une impression de grand désordre se mêle à l’intime conviction d’être dans un lieu exceptionnel. Ron Mueck, artiste secret, accepte rarement les visiteurs et une rencontre avec lui ne laisse pas indifférent. Sa discrétion ne cache pas longtemps sa grande sensibilité. Deux années durant, Gautier Deblonde a filmé régulièrement l’artiste lors de la réalisation de ",
-      "URL": "https://www.mnbaq.org/programmation/cinema/still-life-ron-mueck-at-work"
-    },
-    {
-      "titre": "Mimétisme",
-      "lieu": "MNBAQ",
-      "theme": "arts",
-      "age": "Tous",
-      "semaine": "1",
-      "prix": "Inclus avec le billet d'entrée",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos Lors de cet atelier de peinture corporelle imaginé par l’artiste Karine Payette, inspirez-vous du mimétisme, une propriété que possèdent certains vivants à se fondre dans leur environnement pour leur protection. À l’image de ses récentes sculptures hyperréalistes, maquillez votre peau aux couleurs et aux motifs d’un insecte à la manière d'un camouflage. Immortalisez votre création grâce à",
-      "URL": "https://www.mnbaq.org/programmation/ateliers-et-cours/mimetisme"
-    },
-    {
-      "titre": "Plus vrai que nature",
-      "lieu": "MNBAQ",
-      "theme": "visite guidée",
-      "age": "Tous",
-      "semaine": "1",
-      "prix": "Inclus avec le billet d'entrée",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos Participez à cette visite survol de l'exposition Hyperréalisme. Ceci n'est pas un corps . En compagnie d'un ou d'une guide, apprenez-en davantage sur les grandes thématiques de l'exposition et sur les techniques et matériaux auxquels ont recours quelques-uns des artistes. Voir les activités de la relâche",
-      "URL": "https://www.mnbaq.org/programmation/visites-guidees/plus-vrai-que-nature"
-    },
-    {
-      "titre": "La Voyageuse",
-      "lieu": "MNBAQ",
-      "theme": "événement spécial",
-      "age": "Tous",
-      "semaine": "1",
-      "prix": "Inclus avec le billet d'entrée",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos La Voyageuse , c’est une valise conteuse qui plonge les auditeurs dans une expérience sonore immersive ambiophonique et les invite au voyage. À travers ses histoires, La Voyageuse crée de la magie, avive l’imaginaire des enfants et met les écrans en quarantaine, le temps d’une envolée. Une création du Théâtre des Confettis . Voir les activités de la relâche",
-      "URL": "https://www.mnbaq.org/programmation/evenements-speciaux/la-voyageuse"
-    },
-    {
-      "titre": "Concert classique - Complicité",
-      "lieu": "MNBAQ",
-      "theme": "musique",
-      "age": "Tous",
-      "semaine": "2",
-      "prix": "Gratuit",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos En collaboration avec le Conservatoire de musique de Québec , le Musée national des beaux-arts du Québec est heureux de présenter une troisième série de concerts mettant en vedette les professeurs du Conservatoire. Dans cette série, les professeurs et leurs invités unissent leur art pour partager la richesse de leur savoir et vous offrir des moments de musique inoubliables. Une belle occa",
-      "URL": "https://www.mnbaq.org/programmation/musique-et-concerts/concert-classique-complicite"
-    },
-    {
-      "titre": "Yoga-pyjama",
-      "lieu": "MNBAQ",
-      "theme": "art et mieux-être",
-      "age": "9 ans et +",
-      "semaine": "2",
-      "prix": "Membre : 7 $ | Adulte : 10 $ | Enfant : 7 $",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos Enfilez votre plus beau pyjama et joignez-vous à nous pour une séance festive de muséo-yoga en famille! Créée pour des enfants âgés de 5 à 9 ans accompagnés d'un adulte, cette activité invite à s'inspirer d'une œuvre de nos collections pour initier le mouvement, la respiration et la relaxation. Une expérience détendue et ludique à vivre en famille! Matériel requis Veuillez apporter votre ",
-      "URL": "https://www.mnbaq.org/programmation/art-et-mieux-etre/yoga-pyjama-relache"
-    },
-    {
-      "titre": "Les midis-récitals",
-      "lieu": "MNBAQ",
-      "theme": "musique",
-      "age": "Tous",
-      "semaine": "2",
-      "prix": "Gratuit",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos En collaboration avec le Conservatoire de musique de Québec , nous sommes heureux de présenter une nouvelle série de midis-récitals mettant en vedette les élèves des cycles supérieurs (baccalauréat et maîtrise). Ces concerts de format court sont l’occasion parfaite de découvrir la relève musicale et de faire une pause inspirante au cœur de la journée.",
-      "URL": "https://www.mnbaq.org/programmation/musique-et-concerts/les-midis-recitals"
-    },
-    {
-      "titre": "44e édition du Festival International du Film sur l'Art (FIFA)",
-      "lieu": "MNBAQ",
-      "theme": "cinéma",
-      "age": "Tous",
-      "semaine": "2",
-      "prix": ": Membre : 10 $ | Régulier : 12,50 $ | 18-30 ans : 10 $",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos En simultané avec l'événement montréalais, le Musée présente une sélection de films de la 44 e édition du Festival International du Film sur l’Art (FIFA) . Événement de prestige unique au monde, le FIFA se distingue par sa grande variété de thèmes : portraits d’artistes reconnus ou émergents, films dédiés autant à l’opéra, au cinéma, à la musique, aux arts visuels qu’à la danse. Passeport",
-      "URL": "https://www.mnbaq.org/programmation/cinema/44e-edition-fifa"
-    },
-    {
-      "titre": "Mon amour : c’est pour le restant de mes jours",
-      "lieu": "MNBAQ",
-      "theme": "cinéma",
-      "age": "Tous",
-      "semaine": "2",
-      "prix": "Membre : 10 $ | Régulier : 12,50 $ | 18-30 ans : 10 $",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos « La vie passe à travers les films. » Dans ce documentaire des plus intimes, la réalisatrice québécoise André-Line Beauparlant prend la caméra pour mieux comprendre la vie et l’œuvre de son amoureux, le cinéaste Robert Morin. Alors que l’image, composée d’extraits de films, de séquences de tournage, de conversations et d’archives personnelles, révèle les dessous et l’envers du décor de le",
-      "URL": "https://www.mnbaq.org/programmation/cinema/mon-amour-cest-pour-le-restant-de-mes-jours"
-    },
-    {
-      "titre": "Muséo-yoga en famille",
-      "lieu": "MNBAQ",
-      "theme": "art et mieux-être",
-      "age": "9 ans et +",
-      "semaine": "2",
-      "prix": "Membre : 7 $ | Adulte : 10 $ | Enfant : 7 $",
-      "image": "https://via.placeholder.com/500x300?text=MNBAQ",
-      "description": "À propos Joignez votre curiosité pour l’art à une pratique de yoga en famille! Créée pour des enfants âgés de 5 à 9 ans accompagnés d’une ou d’un adulte, cette activité vous invite à vous inspirer d’une œuvre de nos collections pour amorcer le mouvement, la respiration et la relaxation. Matériel requis Veuillez apporter votre tapis de yoga et une bouteille d’eau. Une tenue de yoga confortable est ",
-      "URL": "https://www.mnbaq.org/programmation/art-et-mieux-etre/museo-yoga-en-famille-2"
-    }
-  ]
-}
+[
+  {
+    "titre": "Collage solaire",
+    "lieu": "MNBAQ",
+    "theme": "arts",
+    "age": "Tous",
+    "semaine": "1",
+    "prix": "7 $ par personne",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Collage solaire.",
+    "URL": "https://www.mnbaq.org/programmation/ateliers-et-cours/collage-solaire"
+  },
+  {
+    "titre": "Muséo-poussette",
+    "lieu": "MNBAQ",
+    "theme": "visite guidée",
+    "age": "0-3 ans",
+    "semaine": "1",
+    "prix": "Membre : 7 $ | Régulier : 10 $",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Muséo-poussette.",
+    "URL": "https://www.mnbaq.org/programmation/visites-guidees/museo-poussette-2026"
+  },
+  {
+    "titre": "Visite guidée Hyperréalisme. Ceci n'est pas un corps",
+    "lieu": "MNBAQ",
+    "theme": "visite guidée",
+    "age": "Tous",
+    "semaine": "1",
+    "prix": "Gratuit",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Visite guidée Hyperréalisme. Ceci n'est pas un corps.",
+    "URL": "https://www.mnbaq.org/programmation/visites-guidees/visite-guidee-hyperrealisme"
+  },
+  {
+    "titre": "Still Life: Ron Mueck at work",
+    "lieu": "MNBAQ",
+    "theme": "cinéma",
+    "age": "Tous",
+    "semaine": "1",
+    "prix": "Membre : 0 $ | Régulier : 12 $",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Still Life: Ron Mueck at work.",
+    "URL": "https://www.mnbaq.org/programmation/cinema/still-life-ron-mueck-at-work"
+  },
+  {
+    "titre": "Mimétisme",
+    "lieu": "MNBAQ",
+    "theme": "arts",
+    "age": "Tous",
+    "semaine": "1",
+    "prix": "Inclus avec le billet d'entrée",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Mimétisme.",
+    "URL": "https://www.mnbaq.org/programmation/ateliers-et-cours/mimetisme"
+  },
+  {
+    "titre": "Plus vrai que nature",
+    "lieu": "MNBAQ",
+    "theme": "visite guidée",
+    "age": "Tous",
+    "semaine": "1",
+    "prix": "Inclus avec le billet d'entrée",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Plus vrai que nature.",
+    "URL": "https://www.mnbaq.org/programmation/visites-guidees/plus-vrai-que-nature"
+  },
+  {
+    "titre": "La Voyageuse",
+    "lieu": "MNBAQ",
+    "theme": "événement spécial",
+    "age": "Tous",
+    "semaine": "1",
+    "prix": "Inclus avec le billet d'entrée",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : La Voyageuse.",
+    "URL": "https://www.mnbaq.org/programmation/evenements-speciaux/la-voyageuse"
+  },
+  {
+    "titre": "Concert classique - Complicité",
+    "lieu": "MNBAQ",
+    "theme": "musique",
+    "age": "Tous",
+    "semaine": "2",
+    "prix": "Gratuit",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Concert classique - Complicité.",
+    "URL": "https://www.mnbaq.org/programmation/musique-et-concerts/concert-classique-complicite"
+  },
+  {
+    "titre": "Yoga-pyjama",
+    "lieu": "MNBAQ",
+    "theme": "art et mieux-être",
+    "age": "Tous",
+    "semaine": "2",
+    "prix": "Membre : 7 $ | Adulte : 10 $ | Enfant : 7 $",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Yoga-pyjama.",
+    "URL": "https://www.mnbaq.org/programmation/art-et-mieux-etre/yoga-pyjama-relache"
+  },
+  {
+    "titre": "Les midis-récitals",
+    "lieu": "MNBAQ",
+    "theme": "musique",
+    "age": "Tous",
+    "semaine": "2",
+    "prix": "Gratuit",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Les midis-récitals.",
+    "URL": "https://www.mnbaq.org/programmation/musique-et-concerts/les-midis-recitals"
+  },
+  {
+    "titre": "44e édition du Festival International du Film sur l'Art (FIFA)",
+    "lieu": "MNBAQ",
+    "theme": "cinéma",
+    "age": "Tous",
+    "semaine": "2",
+    "prix": ": Membre : 10 $ | Régulier : 12,50 $ | 18-30 ans : 10 $",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : 44e édition du Festival International du Film sur l'Art (FIFA).",
+    "URL": "https://www.mnbaq.org/programmation/cinema/44e-edition-fifa"
+  },
+  {
+    "titre": "Mon amour : c’est pour le restant de mes jours",
+    "lieu": "MNBAQ",
+    "theme": "cinéma",
+    "age": "Tous",
+    "semaine": "2",
+    "prix": "Membre : 10 $ | Régulier : 12,50 $ | 18-30 ans : 10 $",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Mon amour : c’est pour le restant de mes jours.",
+    "URL": "https://www.mnbaq.org/programmation/cinema/mon-amour-cest-pour-le-restant-de-mes-jours"
+  },
+  {
+    "titre": "Muséo-yoga en famille",
+    "lieu": "MNBAQ",
+    "theme": "art et mieux-être",
+    "age": "Tous",
+    "semaine": "2",
+    "prix": "Membre : 7 $ | Adulte : 10 $ | Enfant : 7 $",
+    "image": "https://via.placeholder.com/500x300?text=MNBAQ",
+    "description": "Activité au Musée national des beaux-arts du Québec : Muséo-yoga en famille.",
+    "URL": "https://www.mnbaq.org/programmation/art-et-mieux-etre/museo-yoga-en-famille-2"
+  }
+]
