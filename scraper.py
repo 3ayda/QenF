@@ -325,11 +325,19 @@ def parse_listing_page(soup: BeautifulSoup) -> list:
                     prix_card = s
                     break
 
+        # Image depuis la carte (thumbnail déjà présent dans le listing)
+        image_card = ""
+        if card:
+            img = card.find("img", src=lambda s: s and "cloudfront" in s)
+            if img:
+                image_card = img["src"]
+
         events.append({
             "titre": titre,
             "url": full_url,
             "type_activite": type_activite,
             "prix_card": prix_card,
+            "image_card": image_card,
         })
 
     return events
@@ -409,11 +417,16 @@ def main():
         if not description:
             description = f"Activité au Musée national des beaux-arts du Québec : {card['titre']}."
 
-        image = detail.get("image", "")
-        if not image:
-            image = "https://wsrv.nl/?url=https%3A%2F%2Fwww.mnbaq.org%2Fresources%2Fassets%2Fimages%2Fog-image.jpg&w=600&output=webp"
+        # Image : card thumbnail (fiable) > detail page > fallback MNBAQ og:image
+        raw_image = (
+            card.get("image_card")          # extrait du listing, toujours présent
+            or detail.get("image", "")      # fallback depuis la page de détail
+        )
+        if raw_image:
+            image = proxy_image(raw_image)
         else:
-            image = proxy_image(image)
+            image = "https://wsrv.nl/?url=https%3A%2F%2Fwww.mnbaq.org%2Fresources%2Fassets%2Fimages%2Fog-image.jpg&w=600&output=webp"
+        print(f"        🖼  {image[:80]}")
 
         age = detect_age(description, card["titre"])
         theme = detect_theme(card["titre"], card.get("type_activite", ""))
