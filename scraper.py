@@ -22,57 +22,51 @@ class QuebecFamilyScraper:
             response = requests.get(url, headers=self.headers, timeout=15)
             soup = BeautifulSoup(response.text, 'html.parser')
             
-            # On cherche les conteneurs de cartes (le MNBAQ utilise souvent des <article> ou des classes 'c-card')
-            # On va chercher tous les blocs qui contiennent un lien ET une image
-            conteneurs = soup.find_all(['article', 'div'], class_=lambda x: x and ('card' in x or 'activity' in x))
+            # ÉTAPE 1 : On ramasse TOUS les titres H2, H3 et H4 de la page
+            # C'est là que se cachent les noms des activités
+            titres_potentiels = soup.find_all(['h2', 'h3', 'h4'])
+            
+            print(f"DEBUG : J'ai trouvé {len(titres_potentiels)} titres au total sur la page.")
     
-            for card in conteneurs:
-                # 1. Trouver le titre (souvent un h2 ou h3 avec une classe title)
-                titre_el = card.find(['h2', 'h3', 'h4', 'a'], class_=lambda x: x and 'title' in x.lower())
-                if not titre_el:
-                    titre_el = card.find(['h2', 'h3'])
+            for el in titres_potentiels:
+                titre = el.get_text().strip()
                 
-                if not titre_el: continue
-                titre = titre_el.get_text().strip()
-    
-                # --- FILTRE DE QUALITÉ ---
-                # On ignore les titres trop courts ou trop génériques
-                if len(titre) < 10 or titre.lower() in ["atelier", "quoi faire en famille", "activités"]:
-                    continue
-    
-                # 2. Trouver l'image (Gestion du Lazy Loading)
-                img_el = card.find('img')
-                img_url = "https://via.placeholder.com/500x300?text=MNBAQ"
-                if img_el:
-                    # On teste plusieurs sources possibles d'images sur les sites modernes
-                    img_url = img_el.get('data-src') or img_el.get('srcset') or img_el.get('src') or img_url
-                    # Nettoyage si c'est une liste d'images (srcset)
-                    if ',' in img_url: img_url = img_url.split(',')[0].split(' ')[0]
-                    if img_url.startswith('/'): img_url = "https://www.mnbaq.org" + img_url
-    
-                # 3. Trouver la description (le texte qui suit le titre)
-                desc_el = card.find(['p', 'div'], class_=lambda x: x and 'description' in x.lower())
-                description = desc_el.get_text().strip() if desc_el else "Découvrez cette activité familiale au musée."
-                if len(description) > 150: description = description[:147] + "..."
+                # ÉTAPE 2 : Filtres simples pour garder les vraies activités
+                if len(titre) < 10: continue # Trop court (ex: "Atelier")
+                if "famille" not in titre.lower() and "atelier" not in titre.lower() and "défi" not in titre.lower():
+                    # On garde quand même si c'est un titre important (H2 ou H3)
+                    if el.name not in ['h2', 'h3']: continue
     
                 # Éviter les doublons
                 if any(e['titre'] == titre for e in self.events): continue
     
+                # ÉTAPE 3 : Trouver l'image et le lien
+                # On cherche l'image la plus proche du titre
+                parent = el.find_parent(['div', 'article', 'section'])
+                img_url = "https://via.placeholder.com/500x300?text=MNBAQ"
+                if parent:
+                    img = parent.find('img')
+                    if img:
+                        img_url = img.get('data-src') or img.get('src') or img_url
+                        if img_url.startswith('/'): img_url = "https://www.mnbaq.org" + img_url
+    
+                # ÉTAPE 4 : Ajouter à la liste
                 self.events.append({
                     "titre": titre,
                     "lieu": "MNBAQ (Grande Allée)",
                     "theme": "arts",
-                    "age": "Tout âge",
+                    "age": "Famille",
                     "semaine": "1",
                     "prix": "Gratuit / Inclus",
                     "image": img_url,
-                    "description": description
+                    "description": "Une activité culturelle au Musée national des beaux-arts du Québec."
                 })
     
-            print(f"Scraping terminé : {len(self.events)} activités réelles trouvées.")
+            print(f"Résultat final : {len(self.events)} activités trouvées.")
     
         except Exception as e:
-            print(f"Erreur : {e}")  
+            print(f"Erreur MNBAQ : {e}")
+            
 
     def enregistrer_json(self):
         """Génère le fichier que le site Web va lire"""
