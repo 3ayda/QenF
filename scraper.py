@@ -171,7 +171,29 @@ def proxy_image(url: str) -> str:
     return f"https://wsrv.nl/?url={quote(url, safe='')}&w=600&output=webp"
 
 
-def fetch_page(url: str, retries: int = 3):
+def format_date(dates_text: str) -> str:
+    """
+    Extrait et formate la date de début d'un événement.
+    Retourne une chaîne lisible ex: "15 février 2026" ou la plage complète
+    "15 février 2026 au 29 mars 2026". Retourne "" si non trouvé.
+    """
+    if not dates_text:
+        return ""
+    # Cherche une plage : "DD mois YYYY au DD mois YYYY"
+    m = re.search(
+        r"(\d{1,2}\s+\w+\s+\d{4})\s+au\s+(\d{1,2}\s+\w+\s+\d{4})",
+        dates_text, re.IGNORECASE
+    )
+    if m:
+        return f"{m.group(1)} au {m.group(2)}"
+    # Date unique : "DD mois YYYY"
+    m = re.search(r"\d{1,2}\s+\w+\s+\d{4}", dates_text)
+    if m:
+        return m.group(0)
+    return ""
+
+
+
     for attempt in range(retries):
         try:
             r = requests.get(url, headers=HEADERS, timeout=20)
@@ -437,6 +459,7 @@ def main():
             "theme": theme,
             "age": age,
             "semaine": build_semaine(len(evenements)),
+            "date": format_date(dates_text),
             "prix": prix,
             "image": image,
             "description": description,
