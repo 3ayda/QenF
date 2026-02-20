@@ -159,7 +159,7 @@ def normalize_price(raw: str) -> str:
     return raw
 
 
-def fetch_page(url: str, retries: int = 3) -> BeautifulSoup | None:
+def fetch_page(url: str, retries: int = 3):
     for attempt in range(retries):
         try:
             r = requests.get(url, headers=HEADERS, timeout=20)
@@ -227,7 +227,7 @@ def scrape_event_detail(url: str) -> dict:
     }
 
 
-def parse_listing_page(soup: BeautifulSoup) -> list[dict]:
+def parse_listing_page(soup: BeautifulSoup) -> list:
     """Extrait les cartes d'événements d'une page de listing."""
     events = []
 
@@ -377,7 +377,7 @@ def main():
         }
         evenements.append(evenement)
 
-  #   ── Étape 3 : écriture du JSON ──
+    # ── Étape 3 : écriture du JSON ──
     output = {"evenements": evenements}
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
