@@ -17,6 +17,7 @@ from datetime import date, datetime
 from urllib.parse import urljoin, quote
 import requests
 from bs4 import BeautifulSoup
+from quartier import resoudre_quartier
 
 BASE_URL = "https://www.mnbaq.org"
 LIST_URL = f"{BASE_URL}/programmation/familles"
@@ -456,6 +457,7 @@ def main():
         evenement = {
             "titre": card["titre"],
             "lieu": lieu,
+            "quartier": resoudre_quartier(lieu),
             "theme": theme,
             "age": age,
             "semaine": build_semaine(len(evenements)),

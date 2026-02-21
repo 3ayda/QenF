@@ -6,10 +6,52 @@
     <title>Québec en Famille - Agrégateur d'activités</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .event-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .event-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+
+        /* Date badge – semi-transparent, colour matches theme label */
+        .date-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            line-height: 1.4;
+            text-align: center;
+            max-width: 160px;
+        }
+
+        /* Theme colour palette – badge background is rgba version of theme colour */
+        .theme-arts        { color: #2563eb; }
+        .badge-arts        { background: rgba(37,99,235,0.18);  color: #1d4ed8; }
+
+        .theme-cinema      { color: #7c3aed; }
+        .badge-cinema      { background: rgba(124,58,237,0.18); color: #6d28d9; }
+
+        .theme-visite      { color: #0891b2; }
+        .badge-visite      { background: rgba(8,145,178,0.18);  color: #0e7490; }
+
+        .theme-musique     { color: #db2777; }
+        .badge-musique     { background: rgba(219,39,119,0.18); color: #be185d; }
+
+        .theme-evenement   { color: #d97706; }
+        .badge-evenement   { background: rgba(217,119,6,0.18);  color: #b45309; }
+
+        .theme-exposition  { color: #059669; }
+        .badge-exposition  { background: rgba(5,150,105,0.18);  color: #047857; }
+
+        .theme-default     { color: #2563eb; }
+        .badge-default     { background: rgba(37,99,235,0.18);  color: #1d4ed8; }
+    </style>
 </head>
 <body class="bg-gray-50">
 
-
+    <!-- ─── HEADER ─── -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -17,15 +59,13 @@
                     <span class="text-2xl font-bold text-blue-600">QC</span>
                     <span class="text-2xl font-bold text-gray-800 ml-1">En Famille</span>
                 </div>
-
                 <nav class="hidden md:flex space-x-8 text-gray-600 font-medium">
                     <a href="#" class="hover:text-blue-600 transition">Événements</a>
                     <a href="#" class="hover:text-blue-600 transition">Carte</a>
                     <a href="#" class="hover:text-blue-600 transition">Favoris</a>
                 </nav>
-
                 <div class="relative hidden sm:block">
-                    <input type="text" placeholder="Chercher un atelier..." 
+                    <input type="text" placeholder="Chercher un atelier..."
                            class="bg-gray-100 border-none rounded-full py-2 px-4 pl-10 focus:ring-2 focus:ring-blue-500 text-sm">
                     <i class="fa fa-search absolute left-3 top-2.5 text-gray-400"></i>
                 </div>
@@ -33,86 +73,194 @@
         </div>
     </header>
 
+    <!-- ─── FILTER BAR ─── -->
     <section class="bg-blue-600 py-8 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 class="text-3xl font-bold mb-6 text-center md:text-left">Trouvez l'activité parfaite à Québec</h1>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-xl shadow-lg">
-                
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 bg-white p-4 rounded-xl shadow-lg">
+
+                <!-- Thème -->
                 <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-1">Thématique</label>
-                    <select class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
-                        <option>Tous les thèmes</option>
-                        <option>🎨 Arts & Ateliers</option>
-                        <option>❄️ Plein air & Hiver</option>
-                        <option>🏒 Sport</option>
-                        <option>🔬 Sciences & Découvertes</option>
-                        <option>🎭 Spectacles</option>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Thème</label>
+                    <select id="filtreTheme" class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
+                        <option value="">Tous les thèmes</option>
+                        <option value="arts">🎨 Arts & Ateliers</option>
+                        <option value="cinema">🎬 Cinéma</option>
+                        <option value="visite guidée">🏛 Visites guidées</option>
+                        <option value="musique">🎵 Musique</option>
+                        <option value="événement spécial">⭐ Événements spéciaux</option>
+                        <option value="exposition">🖼 Expositions</option>
                     </select>
                 </div>
 
+                <!-- Âge -->
                 <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-1">Âge de l'enfant</label>
-                    <select class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
-                        <option>Tous les âges</option>
-                        <option>0-2 ans (Poupons)</option>
-                        <option>3-5 ans (Préscolaire)</option>
-                        <option>6-12 ans (Primaire)</option>
-                        <option>13 ans + (Ados)</option>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Âge</label>
+                    <select id="filtreAge" class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
+                        <option value="">Tous les âges</option>
+                        <option value="0">0-3 ans</option>
+                        <option value="3">3-5 ans</option>
+                        <option value="6">6-12 ans</option>
+                        <option value="13">13 ans +</option>
                     </select>
                 </div>
 
+                <!-- Période -->
                 <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-1">Période (Février 2026)</label>
-                    <select class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
-                        <option>Tout le mois</option>
-                        <option>Semaine 1 (1-8 fév.)</option>
-                        <option>Semaine 2 (9-15 fév.)</option>
-                        <option>Semaine 3 (16-22 fév.)</option>
-                        <option>Semaine 4 (Relâche - dès le 23 fév.)</option>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Période</label>
+                    <select id="filtrePeriode" class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
+                        <option value="">Toutes les dates</option>
+                        <option value="today">Aujourd'hui</option>
+                        <option value="week">Cette semaine</option>
+                        <option value="month">Ce mois</option>
+                        <option value="nextmonth">Mois prochain</option>
                     </select>
+                </div>
+
+                <!-- Quartier -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Quartier</label>
+                    <select id="filtreQuartier" class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
+                        <option value="">Tous les quartiers</option>
+                        <option value="Vieux-Québec">Vieux-Québec</option>
+                        <option value="La Cité-Limoilou">La Cité-Limoilou</option>
+                        <option value="Charlesbourg">Charlesbourg</option>
+                        <option value="Les Rivières">Les Rivières</option>
+                        <option value="Beauport">Beauport</option>
+                        <option value="Montcalm">Montcalm</option>
+                        <option value="La Haute-Saint-Charles">La Haute-Saint-Charles</option>
+                        <option value="Sainte-Foy-Sillery-Cap-Rouge">Sainte-Foy–Sillery–Cap-Rouge</option>
+                    </select>
+                </div>
+
+                <!-- Recherche texte (colonne 5) -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Recherche</label>
+                    <input id="filtreTexte" type="text" placeholder="Mot-clé..."
+                           class="w-full p-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-blue-500">
                 </div>
 
             </div>
         </div>
     </section>
 
-  <main class="max-w-7xl mx-auto px-4 py-10 text-center text-gray-400">
-      <div id="eventGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <!-- ─── GRILLE ─── -->
+    <main class="max-w-7xl mx-auto px-4 py-10">
+        <div id="eventGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <p class="text-center col-span-full text-gray-400">Chargement des activités…</p>
         </div>
     </main>
 
 <script>
-    // 1. La fonction de log (on s'assure qu'elle fonctionne)
-   // const debugBox = document.getElementById('debug-box');
-//function logToScreen(msg) {
-      //  if(debugBox) debugBox.innerHTML += "<br>> " + msg;
-    //}
+// ─────────────────────────────────────────────────────────
+// UTILITAIRES DATE
+// ─────────────────────────────────────────────────────────
+const MOIS_FR = {
+    'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,'juin':6,
+    'juillet':7,'août':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12
+};
 
-// Fonction pour AFFICHER les cartes (le template qu'on a fait ensemble)
+/**
+ * Parse "DD mois YYYY" → Date object (minuit heure locale), ou null.
+ */
+function parseDateFR(str) {
+    if (!str) return null;
+    const m = str.toLowerCase().match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+    if (!m) return null;
+    const month = MOIS_FR[m[2]];
+    if (!month) return null;
+    return new Date(parseInt(m[3]), month - 1, parseInt(m[1]));
+}
+
+/**
+ * Extrait {debut, fin} depuis le champ date de l'événement.
+ * Exemples acceptés :
+ *   "15 février 2026 au 29 mars 2026"
+ *   "20 mars 2026"
+ */
+function parsePlage(dateStr) {
+    if (!dateStr) return { debut: null, fin: null };
+    const m = dateStr.match(/(.+?)\s+au\s+(.+)/i);
+    if (m) {
+        return { debut: parseDateFR(m[1]), fin: parseDateFR(m[2]) };
+    }
+    const d = parseDateFR(dateStr);
+    return { debut: d, fin: d };
+}
+
+function debutSemaine(d) {
+    const j = new Date(d);
+    j.setDate(j.getDate() - j.getDay());   // dimanche
+    j.setHours(0,0,0,0);
+    return j;
+}
+function finSemaine(d) {
+    const j = debutSemaine(d);
+    j.setDate(j.getDate() + 6);
+    j.setHours(23,59,59,999);
+    return j;
+}
+
+/**
+ * Retourne true si la plage [debut, fin] de l'événement
+ * chevauche la fenêtre [fenetreDebut, fenetreFin].
+ */
+function chevaucheFenetre(plage, fenetreDebut, fenetreFin) {
+    const { debut, fin } = plage;
+    if (!debut || !fin) return true; // date inconnue → on garde
+    return debut <= fenetreFin && fin >= fenetreDebut;
+}
+
+// ─────────────────────────────────────────────────────────
+// THÈME → classes CSS
+// ─────────────────────────────────────────────────────────
+function themeClasses(theme) {
+    const t = (theme || '').toLowerCase();
+    if (t.includes('art') || t.includes('atelier')) return { label: 'theme-arts',       badge: 'badge-arts' };
+    if (t.includes('cin'))                           return { label: 'theme-cinema',     badge: 'badge-cinema' };
+    if (t.includes('visite') || t.includes('guid'))  return { label: 'theme-visite',     badge: 'badge-visite' };
+    if (t.includes('musiqu') || t.includes('conc'))  return { label: 'theme-musique',    badge: 'badge-musique' };
+    if (t.includes('nement') || t.includes('spéc'))  return { label: 'theme-evenement',  badge: 'badge-evenement' };
+    if (t.includes('expo'))                          return { label: 'theme-exposition', badge: 'badge-exposition' };
+    return { label: 'theme-default', badge: 'badge-default' };
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDU DES CARTES
+// ─────────────────────────────────────────────────────────
 function afficherCartes(liste) {
     const grille = document.getElementById('eventGrid');
-    
-    // Si la liste est vide, on affiche un message
     if (liste.length === 0) {
-        grille.innerHTML = "<p class='text-center col-span-full'>Aucun événement trouvé.</p>";
+        grille.innerHTML = "<p class='text-center col-span-full text-gray-400'>Aucun événement trouvé.</p>";
         return;
     }
 
-    grille.innerHTML = liste.map(event => `
-        <div class="event-card bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-            <img src="${event.image || 'https://via.placeholder.com/400x200'}" 
-                 class="w-full h-48 object-cover" 
-                 alt="${event.titre}">
-            
+    grille.innerHTML = liste.map(event => {
+        const { label, badge } = themeClasses(event.theme);
+        const dateBadge = event.date
+            ? `<span class="date-badge ${badge}">${event.date}</span>`
+            : '';
+        const url = event.URL || '#';
+
+        return `
+        <a href="${url}" target="_blank" rel="noopener noreferrer" class="event-card bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 block no-underline">
+            <div class="relative">
+                <img src="${event.image || 'https://via.placeholder.com/400x200'}"
+                     class="w-full h-48 object-cover"
+                     alt="${event.titre}"
+                     loading="lazy">
+                ${dateBadge}
+            </div>
+
             <div class="p-5">
-                <span class="text-xs font-bold text-blue-600 uppercase tracking-wide">
-                    ${event.theme}
+                <span class="text-xs font-bold uppercase tracking-wide ${label}">
+                    ${event.theme || ''}
                 </span>
                 <h3 class="text-xl font-bold text-gray-900 mt-1">
                     ${event.titre}
                 </h3>
-                <p class="text-gray-600 text-sm mt-2">
+                <p class="text-gray-500 text-sm mt-1">
                     📍 ${event.lieu}
                 </p>
                 <div class="mt-4 flex justify-between items-center">
@@ -122,31 +270,104 @@ function afficherCartes(liste) {
                     </span>
                 </div>
             </div>
-        </div>
-    `).join('');
+        </a>`;
+    }).join('');
 }
-    
-    // 2. Fonction principale de chargement
-    async function chargerDonnees() {
-        try {
-            const reponse = await fetch('./evenements.json');
-            if (!reponse.ok) {
-                throw new Error("Fichier introuvable sur le serveur (404)");
-            }
-            const donnees = await reponse.json();
-            // On appelle la fonction d'affichage
-            afficherCartes(donnees);
 
-        } catch (erreur) {
-            logToScreen("!!! ERREUR : " + erreur.message);
-        }
+// ─────────────────────────────────────────────────────────
+// FILTRAGE
+// ─────────────────────────────────────────────────────────
+let tousLesEvenements = [];
+
+function filtrer() {
+    const theme    = document.getElementById('filtreTheme').value.toLowerCase();
+    const age      = document.getElementById('filtreAge').value;
+    const periode  = document.getElementById('filtrePeriode').value;
+    const quartier = document.getElementById('filtreQuartier').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const texte    = document.getElementById('filtreTexte').value.toLowerCase();
+
+    const now       = new Date();
+    const auj       = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const aujFin    = new Date(auj); aujFin.setHours(23,59,59,999);
+
+    // Fenêtre pour chaque option de période
+    let fenetreDebut = null, fenetreFin = null;
+    if (periode === 'today') {
+        fenetreDebut = auj;
+        fenetreFin   = aujFin;
+    } else if (periode === 'week') {
+        fenetreDebut = debutSemaine(auj);
+        fenetreFin   = finSemaine(auj);
+    } else if (periode === 'month') {
+        fenetreDebut = new Date(now.getFullYear(), now.getMonth(), 1);
+        fenetreFin   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    } else if (periode === 'nextmonth') {
+        fenetreDebut = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        fenetreFin   = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59);
     }
 
-    // 3. LE DÉCLENCHEUR (Crucial pour iPad)
-    // On attend que le document soit prêt avant de lancer le script
-    document.addEventListener('DOMContentLoaded', () => {
-         chargerDonnees();
+    const resultat = tousLesEvenements.filter(ev => {
+        // Thème
+        if (theme && !(ev.theme || '').toLowerCase().includes(theme)) return false;
+
+        // Âge (compare le chiffre minimum de la tranche)
+        if (age !== '') {
+            const ageMin = parseInt(age);
+            const evAge  = (ev.age || '').toLowerCase();
+            if (evAge === 'tous') {
+                // garder
+            } else {
+                const m = evAge.match(/(\d+)/);
+                if (m && parseInt(m[1]) > ageMin + 5) return false;
+            }
+        }
+
+        // Période
+        if (fenetreDebut && fenetreFin) {
+            const plage = parsePlage(ev.date || '');
+            if (!chevaucheFenetre(plage, fenetreDebut, fenetreFin)) return false;
+        }
+
+        // Quartier (champ dédié dans le JSON)
+        if (quartier) {
+            const evQ = (ev.quartier || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (evQ !== quartier) return false;
+        }
+
+        // Texte libre
+        if (texte) {
+            const haystack = ((ev.titre || '') + ' ' + (ev.description || '')).toLowerCase();
+            if (!haystack.includes(texte)) return false;
+        }
+
+        return true;
     });
+
+    afficherCartes(resultat);
+}
+
+// Branche les filtres
+['filtreTheme','filtreAge','filtrePeriode','filtreQuartier'].forEach(id => {
+    document.getElementById(id).addEventListener('change', filtrer);
+});
+document.getElementById('filtreTexte').addEventListener('input', filtrer);
+
+// ─────────────────────────────────────────────────────────
+// CHARGEMENT
+// ─────────────────────────────────────────────────────────
+async function chargerDonnees() {
+    try {
+        const reponse = await fetch('./evenements.json');
+        if (!reponse.ok) throw new Error('Fichier introuvable (404)');
+        tousLesEvenements = await reponse.json();
+        afficherCartes(tousLesEvenements);
+    } catch (erreur) {
+        document.getElementById('eventGrid').innerHTML =
+            `<p class='text-center col-span-full text-red-400'>Erreur : ${erreur.message}</p>`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', chargerDonnees);
 </script>
 
 </body>
