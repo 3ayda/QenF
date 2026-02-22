@@ -250,14 +250,19 @@ def scrape_event_detail(url):
             prix_raw = line
             break
 
-    # Dates
+    # Dates — search info section first, then full page text
+    # Use [A-Za-zÀ-ÿ]+ to safely match accented month names like février, août
     dates_text = ""
-    m = re.search(
-        r"\d{1,2}\s+\w+\s+\d{4}[^\n]*(?:\s+au\s+\d{1,2}\s+\w+\s+\d{4})?",
-        info_text
+    DATE_RE = re.compile(
+        r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+"
+        r"\s+\d{4}(?:\s+au\s+\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})?",
+        re.IGNORECASE
     )
-    if m:
-        dates_text = m.group(0).strip()
+    for search_text in (info_text, main.get_text(" ", strip=True)):
+        dm = DATE_RE.search(search_text)
+        if dm:
+            dates_text = dm.group(0).strip()
+            break
 
     # Lieu
     lieu = "MNBAQ"
