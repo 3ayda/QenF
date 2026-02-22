@@ -83,7 +83,7 @@ DATE_MAX = date(
 
 def parse_date_fr(text):
     text = text.lower().strip()
-    m = re.search(r"(\d{1,2})\s+([A-Za-z\u00C0-\u024F]+)\s+(\d{4})", text)
+    m = re.search(r"(\d{1,2})\s+(\w+)\s+(\d{4})", text)
     if m:
         month = MONTHS_FR.get(m.group(2))
         if month:
@@ -96,8 +96,7 @@ def parse_date_fr(text):
 
 def event_in_window(dates_text):
     dt = dates_text.lower()
-    D = r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}"
-    m = re.search(rf"({D})\s+au\s+({D})", dt)
+    m = re.search(r"(\d{1,2}\s+\w+\s+\d{4})\s+au\s+(\d{1,2}\s+\w+\s+\d{4})", dt)
     if m:
         start = parse_date_fr(m.group(1))
         end   = parse_date_fr(m.group(2))
@@ -151,12 +150,13 @@ def proxy_image(url):
 def format_date(dates_text):
     if not dates_text:
         return ""
-    # Use [A-Za-zÀ-ÿ]+ to match accented month names (février, août, etc.)
-    D = r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}"
-    m = re.search(rf"({D})\s+au\s+({D})", dates_text, re.IGNORECASE)
+    m = re.search(
+        r"(\d{1,2}\s+\w+\s+\d{4})\s+au\s+(\d{1,2}\s+\w+\s+\d{4})",
+        dates_text, re.IGNORECASE
+    )
     if m:
         return f"{m.group(1)} au {m.group(2)}"
-    m = re.search(D, dates_text, re.IGNORECASE)
+    m = re.search(r"\d{1,2}\s+\w+\s+\d{4}", dates_text)
     if m:
         return m.group(0)
     return ""
@@ -231,9 +231,7 @@ def scrape_event_detail(url):
     # Section Informations
     info_text = ""
     for h2 in main.find_all("h2"):
-        h2_text = h2.get_text(strip=True).lower()
-        # Match "Informations" exactly, not "Informations sur l'image" etc.
-        if h2_text == "informations" or h2_text == "information":
+        if "information" in h2.get_text(strip=True).lower():
             parts = []
             for sib in h2.find_next_siblings():
                 if sib.name == "h2":
@@ -269,7 +267,7 @@ def scrape_event_detail(url):
     # Lieu
     lieu = "MNBAQ"
     for h2 in main.find_all("h2"):
-        if h2.get_text(strip=True).lower() in ("informations", "information"):
+        if "information" in h2.get_text(strip=True).lower():
             for sib in h2.find_next_siblings():
                 if sib.name == "h2":
                     break
@@ -281,6 +279,13 @@ def scrape_event_detail(url):
                             lieu = "MNBAQ – " + txt
                             break
             break
+
+    # ── DEBUG ──────────────────────────────────────────────────────
+    all_h2s = [h.get_text(strip=True) for h in main.find_all("h2")]
+    print(f"    [DEBUG] h2s found: {all_h2s}")
+    print(f"    [DEBUG] info_text: {repr(info_text[:120])}")
+    print(f"    [DEBUG] dates_text: {repr(dates_text)}")
+    # ───────────────────────────────────────────────────────────────
 
     return {
         "description": description[:400],
