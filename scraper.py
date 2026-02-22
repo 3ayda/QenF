@@ -231,7 +231,9 @@ def scrape_event_detail(url):
     # Section Informations
     info_text = ""
     for h2 in main.find_all("h2"):
-        if "information" in h2.get_text(strip=True).lower():
+        h2_text = h2.get_text(strip=True).lower()
+        # Match "Informations" exactly, not "Informations sur l'image" etc.
+        if h2_text == "informations" or h2_text == "information":
             parts = []
             for sib in h2.find_next_siblings():
                 if sib.name == "h2":
@@ -267,7 +269,7 @@ def scrape_event_detail(url):
     # Lieu
     lieu = "MNBAQ"
     for h2 in main.find_all("h2"):
-        if "information" in h2.get_text(strip=True).lower():
+        if h2.get_text(strip=True).lower() in ("informations", "information"):
             for sib in h2.find_next_siblings():
                 if sib.name == "h2":
                     break
