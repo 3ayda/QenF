@@ -194,7 +194,12 @@ def scrape_event_detail(url):
     main = soup.find("main") or soup.find("div", {"id": "main"}) or soup.find("article") or soup.body
     if not main:
         return {}
-    print(f"    [DEBUG] container tag: {main.name}, id={main.get('id','')}, class={main.get('class','')} ")
+
+    # Confirm this is a family event — skip adult/member-only events
+    page_text = main.get_text(" ", strip=True).lower()
+    if "familles" not in page_text and "famille" not in page_text:
+        print("    ⏩ Pas une activité Familles – ignoré.")
+        return {"skip": True}
 
     # Image
     image, autres_h2 = "", None
@@ -281,13 +286,6 @@ def scrape_event_detail(url):
                             break
             break
 
-    # ── DEBUG ──────────────────────────────────────────────────────
-    all_h2s = [h.get_text(strip=True) for h in main.find_all("h2")]
-    print(f"    [DEBUG] h2s found: {all_h2s}")
-    print(f"    [DEBUG] info_text: {repr(info_text[:120])}")
-    print(f"    [DEBUG] dates_text: {repr(dates_text)}")
-    # ───────────────────────────────────────────────────────────────
-
     return {
         "description": description[:400],
         "image":       image,
@@ -311,6 +309,14 @@ def parse_listing_page(soup):
         card = (link.find_parent("li")
                 or link.find_parent("article")
                 or link.find_parent("div"))
+
+        # Skip if card doesn't have a "Familles" tag — avoids adult/member events
+        # that appear in the nav or bleed in from other listing pages
+        if card:
+            card_text = card.get_text(" ", strip=True).lower()
+            if "familles" not in card_text and "famille" not in card_text:
+                continue
+
         titre         = text.replace("En savoir plus sur", "").strip()
         type_tag      = card.find(["h2","h3","h4","span","p"]) if card else None
         type_activite = type_tag.get_text(strip=True) if type_tag else ""
@@ -385,9 +391,13 @@ def main():
     for i, card in enumerate(unique_cards):
         print(f"   [{i+1}/{len(unique_cards)}] {card['titre']}")
         detail     = scrape_event_detail(card["url"])
-        dates_text = detail.get("dates_text", "")
         time.sleep(0.6)
 
+        if detail.get("skip"):
+            skipped += 1
+            continue
+
+        dates_text = detail.get("dates_text", "")
         if dates_text and not event_in_window(dates_text):
             print("        ⏩ Hors fenêtre – ignoré.")
             skipped += 1
