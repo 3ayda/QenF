@@ -96,17 +96,18 @@
   padding: 4px 10px; border-radius: 6px;
   font-size: 0.66rem; font-weight: 700;
   line-height: 1.5; color: white;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  background: rgba(0,0,0,0.38);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
-/* Theme colours */
-.tc-arts    { color: #2563eb; } .bc-arts    { background: #2563eb; }
-.tc-cinema  { color: #7c3aed; } .bc-cinema  { background: #7c3aed; }
-.tc-visite  { color: #0891b2; } .bc-visite  { background: #0891b2; }
-.tc-musique { color: #db2777; } .bc-musique { background: #db2777; }
-.tc-event   { color: #d97706; } .bc-event   { background: #d97706; }
-.tc-expo    { color: #059669; } .bc-expo    { background: #059669; }
+/* Theme colours (badge is now neutral transparent — theme used for labels only) */
+.tc-arts    { color: #2563eb; } .bc-arts    {}
+.tc-cinema  { color: #7c3aed; } .bc-cinema  {}
+.tc-visite  { color: #0891b2; } .bc-visite  {}
+.tc-musique { color: #db2777; } .bc-musique {}
+.tc-event   { color: #d97706; } .bc-event   {}
+.tc-expo    { color: #059669; } .bc-expo    {}
 
 /* Summary chips */
 .chip {
