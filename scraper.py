@@ -195,12 +195,6 @@ def scrape_event_detail(url):
     if not main:
         return {}
 
-    # Confirm this is a family event — skip adult/member-only events
-    page_text = main.get_text(" ", strip=True).lower()
-    if "familles" not in page_text and "famille" not in page_text:
-        print("    ⏩ Pas une activité Familles – ignoré.")
-        return {"skip": True}
-
     # Image
     image, autres_h2 = "", None
     for h2 in main.find_all("h2"):
@@ -306,16 +300,23 @@ def parse_listing_page(soup):
             continue
         seen_urls.add(full_url)
 
+        # Only keep events from known family-compatible URL paths
+        # This blocks adult cinema, conférences, membres-only events etc.
+        FAMILY_PATHS = [
+            "/programmation/familles",
+            "/programmation/ateliers-et-cours",
+            "/programmation/evenements-speciaux",
+            "/programmation/visites-guidees",
+            "/programmation/musique-et-concerts",
+            "/programmation/expositions",
+            "/programmation/arts-et-mieux-etre",
+        ]
+        if not any(p in full_url for p in FAMILY_PATHS):
+            continue
+
         card = (link.find_parent("li")
                 or link.find_parent("article")
                 or link.find_parent("div"))
-
-        # Skip if card doesn't have a "Familles" tag — avoids adult/member events
-        # that appear in the nav or bleed in from other listing pages
-        if card:
-            card_text = card.get_text(" ", strip=True).lower()
-            if "familles" not in card_text and "famille" not in card_text:
-                continue
 
         titre         = text.replace("En savoir plus sur", "").strip()
         type_tag      = card.find(["h2","h3","h4","span","p"]) if card else None
