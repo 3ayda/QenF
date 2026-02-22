@@ -191,9 +191,10 @@ def scrape_event_detail(url):
     soup = fetch_page(url)
     if not soup:
         return {}
-    main = soup.find("main")
+    main = soup.find("main") or soup.find("div", {"id": "main"}) or soup.find("article") or soup.body
     if not main:
         return {}
+    print(f"    [DEBUG] container tag: {main.name}, id={main.get('id','')}, class={main.get('class','')} ")
 
     # Image
     image, autres_h2 = "", None
