@@ -83,7 +83,7 @@ DATE_MAX = date(
 
 def parse_date_fr(text):
     text = text.lower().strip()
-    m = re.search(r"(\d{1,2})\s+(\w+)\s+(\d{4})", text)
+    m = re.search(r"(\d{1,2})\s+([A-Za-z\u00C0-\u024F]+)\s+(\d{4})", text)
     if m:
         month = MONTHS_FR.get(m.group(2))
         if month:
@@ -96,7 +96,8 @@ def parse_date_fr(text):
 
 def event_in_window(dates_text):
     dt = dates_text.lower()
-    m = re.search(r"(\d{1,2}\s+\w+\s+\d{4})\s+au\s+(\d{1,2}\s+\w+\s+\d{4})", dt)
+    D = r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}"
+    m = re.search(rf"({D})\s+au\s+({D})", dt)
     if m:
         start = parse_date_fr(m.group(1))
         end   = parse_date_fr(m.group(2))
@@ -150,13 +151,12 @@ def proxy_image(url):
 def format_date(dates_text):
     if not dates_text:
         return ""
-    m = re.search(
-        r"(\d{1,2}\s+\w+\s+\d{4})\s+au\s+(\d{1,2}\s+\w+\s+\d{4})",
-        dates_text, re.IGNORECASE
-    )
+    # Use [A-Za-zÀ-ÿ]+ to match accented month names (février, août, etc.)
+    D = r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}"
+    m = re.search(rf"({D})\s+au\s+({D})", dates_text, re.IGNORECASE)
     if m:
         return f"{m.group(1)} au {m.group(2)}"
-    m = re.search(r"\d{1,2}\s+\w+\s+\d{4}", dates_text)
+    m = re.search(D, dates_text, re.IGNORECASE)
     if m:
         return m.group(0)
     return ""
