@@ -427,12 +427,13 @@ def main():
             "URL":         card["url"],
         })
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(evenements, f, ensure_ascii=False, indent=2)
-
-    print(f"\n🎉 {len(evenements)} événement(s) exporté(s) dans « {OUTPUT_FILE} » "
-          f"({skipped} hors fenêtre ignoré(s)).")
+    print(f"\n🎉 {len(evenements)} événement(s) MNBAQ ({skipped} hors fenêtre ignoré(s)).")
+    return evenements
 
 
 if __name__ == "__main__":
-    main()
+    import json as _json
+    results = main()
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        _json.dump(results, f, ensure_ascii=False, indent=2)
+    print(f"💾 {len(results)} événements dans {OUTPUT_FILE}.")
