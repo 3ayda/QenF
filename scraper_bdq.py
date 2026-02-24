@@ -192,7 +192,8 @@ def parse_listing(soup):
 def scrape_detail(url):
     """
     Scrape une page de détail d'activité BDQ.
-    Retourne un dict avec: public, date_str, lieu, prix_raw, description, categorie
+    La page contient un tableau avec colonnes Date | Heure | Lieu | Places | Détails
+    C'est là qu'on trouve la branche de bibliothèque et la date exacte.
     """
     soup = fetch(url)
     if not soup:
@@ -204,83 +205,105 @@ def scrape_detail(url):
 
     full_text = body.get_text(" ", strip=True)
 
-    # ── Public ──
+    # ── Public ── (format: <strong>Public :</strong>\nTous)
     public_text = ""
-    for label in body.find_all(string=re.compile(r"Public", re.I)):
-        parent = label.parent
-        # Look for sibling or next element with the actual values
-        nxt = parent.find_next_sibling()
-        if nxt:
-            public_text = nxt.get_text(" ", strip=True)
+    for strong in body.find_all("strong"):
+        if "public" in strong.get_text(strip=True).lower():
+            # Value is the next text node or sibling
+            nxt = strong.next_sibling
+            if nxt:
+                public_text = str(nxt).strip().lstrip(":").strip()
+            if not public_text:
+                parent = strong.parent
+                txt = parent.get_text(" ", strip=True)
+                m = re.search(r"Public\s*[:\-]?\s*(.+)", txt, re.I)
+                if m:
+                    public_text = m.group(1).strip()
             break
-        # Sometimes it's in the same element after a colon
-        txt = parent.get_text(" ", strip=True)
-        m = re.search(r"Public\s*[:\-]\s*(.+)", txt, re.I)
-        if m:
-            public_text = m.group(1).strip()
-            break
-    # Fallback: search for "réservée aux familles" directly in text
     if not public_text:
         if re.search(r"r[eé]serv[eé]e?\s+aux\s+familles", full_text, re.I):
             public_text = "Familles"
 
-    # ── Date ──
-    date_str = ""
-    D = r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}"
-    DATE_RE = re.compile(rf"({D})(?:\s+au\s+({D}))?", re.I)
-    m = DATE_RE.search(full_text)
-    if m:
-        date_str = m.group(1)
-        if m.group(2):
-            date_str += " au " + m.group(2)
-
-    # ── Lieu (bibliothèque) ──
+    # ── Table : Date + Lieu ──
+    # The schedule table has columns: Date | Heure | Lieu | Places | Détails
     lieu = "Bibliothèque de Québec"
-    # Look for branch name pattern
-    for label in body.find_all(string=re.compile(r"Biblioth[eè]que|Maison de la litt", re.I)):
-        txt = label.strip()
-        if len(txt) > 5:
-            lieu = txt
-            break
-    # Also check page title or h1
-    h1 = soup.find("h1")
-    # Try to find branch in a dedicated field
-    for selector in ["#ctl00_activites_DetailActiviteUC_lblBibliotheque",
-                     ".bibliotheque", "[class*='biblio']"]:
-        el = soup.select_one(selector)
-        if el:
-            t = el.get_text(strip=True)
-            if t:
-                lieu = "Bibliothèque " + t if "bibliothèque" not in t.lower() else t
-                break
+    date_str = ""
 
-    # ── Prix ──
+    for table in body.find_all("table"):
+        headers = [th.get_text(strip=True).lower() for th in table.find_all("th")]
+        if "lieu" not in headers and "date" not in headers:
+            continue
+        # Find column indices
+        date_col = next((i for i, h in enumerate(headers) if "date" in h), None)
+        lieu_col = next((i for i, h in enumerate(headers) if "lieu" in h), None)
+        prix_col = next((i for i, h in enumerate(headers) if "place" in h or "entrée" in h or "prix" in h), None)
+
+        for row in table.find_all("tr")[1:]:  # skip header row
+            cells = row.find_all(["td","th"])
+            if date_col is not None and date_col < len(cells):
+                raw_date = cells[date_col].get_text(" ", strip=True)
+                # Handles formats:
+                # "Du 17 février au 29 mars 2026"  (year only at end)
+                # "17 février 2026 au 29 mars 2026"
+                # "17 février 2026"
+                DY  = r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}"  # with year
+                DNY = r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+"            # without year
+                # Try range with year on both sides first
+                m = re.search(rf"({DY})\s+au\s+({DY})", raw_date, re.I)
+                if m:
+                    date_str = f"{m.group(1)} au {m.group(2)}"
+                else:
+                    # Try "Du X mois au Y mois YYYY" — year only on end date
+                    m2 = re.search(
+                        rf"(?:du\s+)?({DNY})\s+au\s+({DY})",
+                        raw_date, re.I
+                    )
+                    if m2:
+                        # Extract year from end date and infer for start
+                        year = re.search(r"\d{4}", m2.group(2)).group(0)
+                        date_str = f"{m2.group(1)} {year} au {m2.group(2)}"
+                    else:
+                        m3 = re.search(DY, raw_date, re.I)
+                        if m3:
+                            date_str = m3.group(0)
+            if lieu_col is not None and lieu_col < len(cells):
+                t = cells[lieu_col].get_text(strip=True)
+                if t and t.lower() not in ("lieu", "-", ""):
+                    lieu = t
+            break  # only first data row needed
+
+    # ── Prix (from table "Places disponibles" cell or text) ──
     prix_raw = ""
-    price_m = re.search(r"(\d[\d\s,\.]*\$|gratuit)", full_text, re.I)
-    if price_m:
-        prix_raw = price_m.group(0).strip()
+    if "entrée libre" in full_text.lower() or "accès libre" in full_text.lower():
+        prix_raw = "Gratuit"
+    else:
+        m = re.search(r"(\d[\d\s,\.]*\$[^\n]{0,40}|gratuit)", full_text, re.I)
+        if m:
+            prix_raw = m.group(0).strip()
 
-    # ── Description ──
+    # ── Description ── (first substantial <p>, skip breadcrumb)
     desc = ""
     for p in body.find_all("p"):
         t = p.get_text(" ", strip=True)
-        if len(t) > 60:
+        if len(t) > 80 and "accueil" not in t.lower()[:20]:
             desc = t[:400]
             break
 
     # ── Catégorie ──
     categorie = ""
-    breadcrumb = soup.select(".breadcrumb a, nav a")
-    if breadcrumb:
-        categorie = breadcrumb[-1].get_text(strip=True)
+    for a in body.select("a"):
+        href = a.get("href","")
+        if "javascript" in href and "Categorie" in href:
+            categorie = a.get_text(strip=True)
+            break
 
     return {
-        "public":    public_text,
-        "date_str":  date_str,
-        "lieu":      lieu,
-        "prix_raw":  prix_raw,
+        "public":      public_text,
+        "date_str":    date_str,
+        "lieu":        lieu,
+        "prix_raw":    prix_raw,
         "description": desc,
-        "categorie": categorie,
+        "categorie":   categorie,
     }
 
 

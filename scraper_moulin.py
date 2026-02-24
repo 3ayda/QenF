@@ -273,6 +273,17 @@ def scrape_detail(url):
             start = parse_date_fr(dm.group(1))
             end   = parse_date_fr(dm.group(2)) if dm.group(2) else start
 
+    # Image — from detail page <img> inside main content (not logo/loading gif)
+    image = ""
+    if body:
+        for img in body.find_all("img"):
+            src = img.get("src", "")
+            if ("wp-content/uploads" in src
+                    and "logo" not in src.lower()
+                    and "loading" not in src.lower()):
+                image = src
+                break
+
     # Description (first substantial paragraph)
     desc = ""
     if body:
@@ -282,17 +293,22 @@ def scrape_detail(url):
                 desc = t[:400]
                 break
 
-    # Prix (from detail page, more complete)
+    # Prix — prefer "Coût: X" pattern, then short price-only match
     prix_raw = ""
-    m = re.search(r"([\d,\.]+\s*\$[^\n]*|gratuit)", full_text, re.I)
+    m = re.search(r"Co[uû]t\s*[:\-]\s*([^.\n]{3,60})", full_text, re.I)
     if m:
-        prix_raw = m.group(0).strip()[:80]
+        prix_raw = m.group(1).strip()
+    else:
+        m2 = re.search(r"(gratuit|[\d,\.]+\s*\$\s*(?:/\s*[\w]+)?)", full_text, re.I)
+        if m2:
+            prix_raw = m2.group(0).strip()
 
     return {
         "start":    start,
         "end":      end,
         "description": desc,
         "prix_raw": prix_raw,
+        "image":    image,
         "full_text": full_text,
     }
 
@@ -340,6 +356,9 @@ def main():
         desc  = detail.get("description") or card.get("desc_courte", "")
         prix  = normalize_price(detail.get("prix_raw") or card.get("prix_raw", ""))
 
+        # Use detail page image if listing didn't have one
+        image = detail.get("image") or card.get("image", "")
+
         evenements.append({
             "titre":       card["titre"],
             "lieu":        LIEU_FIXE,
@@ -349,7 +368,7 @@ def main():
             "semaine":     "",
             "date":        date_str,
             "prix":        prix,
-            "image":       card.get("image", ""),
+            "image":       image,
             "description": desc,
             "URL":         card["url"],
         })
