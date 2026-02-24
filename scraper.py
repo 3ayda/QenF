@@ -31,6 +31,7 @@ if __name__ == "__main__":
     all_events += run_scraper("scraper_mnbaq",  "MNBAQ – Activités Familles")
     all_events += run_scraper("scraper_bdq",    "Bibliothèque de Québec")
     all_events += run_scraper("scraper_moulin", "Moulin des Jésuites")
+    all_events += run_scraper("scraper_mcq",    "Musée de la civilisation")
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(all_events, f, ensure_ascii=False, indent=2)
