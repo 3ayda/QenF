@@ -120,6 +120,42 @@
   color: rgba(255,255,255,0.6); font-size: 0.9rem; line-height: 1; padding: 0;
 }
 .chip-x:hover { color: white; }
+
+/* ── Bookmark button ── */
+.btn-bookmark {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(0,0,0,0.38);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; line-height: 1;
+  transition: transform 0.15s, background 0.15s;
+}
+.btn-bookmark:hover  { transform: scale(1.18); background: rgba(0,0,0,0.55); }
+.btn-bookmark.saved  { background: #2563eb; }
+.btn-bookmark.saved:hover { background: #1d4ed8; }
+
+/* ── Tab nav ── */
+.tab-link {
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  cursor: pointer; user-select: none;
+}
+.tab-link.active            { color: #2563eb; border-color: #2563eb; }
+.tab-link:not(.active)      { color: #6b7280; }
+.tab-link:not(.active):hover{ color: #374151; }
+
+/* ── Favoris badge on nav ── */
+.fav-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #ef4444; color: white; border-radius: 999px;
+  font-size: 0.6rem; font-weight: 800;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  margin-left: 4px; line-height: 1;
+  transition: opacity 0.2s, transform 0.2s;
+}
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -131,10 +167,11 @@
       <span class="text-2xl font-extrabold text-blue-600">Québec</span>
       <span class="text-2xl font-extrabold text-gray-800">en Famille</span>
     </div>
-    <nav class="hidden md:flex gap-8 text-sm font-semibold text-gray-500">
-      <a href="#" class="text-blue-600">Événements</a>
-      <a href="#" class="hover:text-blue-600 transition">Carte</a>
-      <a href="#" class="hover:text-blue-600 transition">Favoris</a>
+    <nav class="hidden md:flex gap-8 text-sm font-semibold">
+      <span class="tab-link active" id="tab-events"  onclick="setTab('events')">Événements</span>
+      <span class="tab-link"        id="tab-favoris" onclick="setTab('favoris')">
+        Favoris<span class="fav-badge" id="favBadge" style="opacity:0">0</span>
+      </span>
     </nav>
   </div>
 </header>
@@ -251,6 +288,17 @@
 
   </div>
 </section>
+
+<!-- ─── FAVORIS HERO (hidden until Favoris tab active) ─── -->
+<div id="favHero" style="display:none" class="bg-blue-600 py-5">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-3">
+    <span style="font-size:1.6rem">🔖</span>
+    <h1 class="text-xl font-extrabold text-white">
+      Mes favoris
+      <span id="favCount" class="inline-flex items-center justify-center bg-white/25 text-white rounded-full text-sm font-bold min-w-[26px] h-[26px] px-2 ml-2">0</span>
+    </h1>
+  </div>
+</div>
 
 <!-- ─── EVENT GRID ─── -->
 <main class="max-w-7xl mx-auto px-4 py-8">
@@ -430,31 +478,118 @@ function afficherCartes(liste) {
   const grid = document.getElementById('eventGrid');
   if (!liste.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#94a3b8">
-      <div style="font-size:3rem;margin-bottom:12px">🔍</div>
-      <p style="font-weight:700;font-size:1.1rem">Aucune activité trouvée</p>
-      <p style="font-size:0.85rem;margin-top:4px">Essayez d'élargir vos filtres</p></div>`;
+      <div style="font-size:3rem;margin-bottom:12px">${currentTab==='favoris'?'🔖':'🔍'}</div>
+      <p style="font-weight:700;font-size:1.1rem">${currentTab==='favoris'?'Aucun favori pour l\'instant':'Aucune activité trouvée'}</p>
+      <p style="font-size:0.85rem;margin-top:4px">${currentTab==='favoris'?'Cliquez sur 🏷️ sur une activité pour la sauvegarder ici':'Essayez d\'élargir vos filtres'}</p></div>`;
     return;
   }
   grid.innerHTML = liste.map(ev => {
-    const [lbl, bdg] = themeCSS(ev.theme);
-    const badge = ev.date ? `<span class="date-badge ${bdg}">${ev.date}</span>` : '';
-    return `<a href="${ev.URL||'#'}" target="_blank" rel="noopener noreferrer" class="event-card">
-      <div style="position:relative" class="event-card-img">
-        <img src="${ev.image||'https://via.placeholder.com/600x300'}"
-             style="width:100%;height:192px;object-fit:cover" alt="${ev.titre}" loading="lazy">
-        ${badge}
-      </div>
-      <div style="padding:20px">
-        <span class="text-xs font-bold uppercase tracking-wider ${lbl}">${ev.theme||''}</span>
-        <h3 style="font-size:1.1rem;font-weight:700;color:#111827;margin:4px 0 6px">${ev.titre}</h3>
-        <p style="font-size:0.83rem;color:#6b7280">📍 ${ev.lieu}</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
-          <span style="font-size:0.82rem;color:#6b7280">Âge : ${ev.age}</span>
-          <span style="font-size:0.75rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:999px">${ev.prix}</span>
+    const [lbl] = themeCSS(ev.theme);
+    const badge   = ev.date ? `<span class="date-badge">${ev.date}</span>` : '';
+    const saved   = favoris.has(ev.URL);
+    const safeUrl = encodeURIComponent(ev.URL || '');
+    return `<div class="event-card" style="position:relative;display:block;border-radius:16px;overflow:hidden;">
+      <button class="btn-bookmark${saved?' saved':''}"
+              onclick="toggleFavori(event,'${safeUrl}')"
+              title="${saved?'Retirer des favoris':'Ajouter aux favoris'}"
+              aria-label="${saved?'Retirer des favoris':'Ajouter aux favoris'}">
+        ${saved ? '🔖' : '🏷️'}
+      </button>
+      <a href="${ev.URL||'#'}" target="_blank" rel="noopener noreferrer"
+         style="display:block;text-decoration:none;color:inherit;">
+        <div style="position:relative" class="event-card-img">
+          <img src="${ev.image||'https://via.placeholder.com/600x300'}"
+               style="width:100%;height:192px;object-fit:cover" alt="${ev.titre}" loading="lazy">
+          ${badge}
         </div>
-      </div>
-    </a>`;
+        <div style="padding:20px">
+          <span class="text-xs font-bold uppercase tracking-wider ${lbl}">${ev.theme||''}</span>
+          <h3 style="font-size:1.1rem;font-weight:700;color:#111827;margin:4px 0 6px">${ev.titre}</h3>
+          <p style="font-size:0.83rem;color:#6b7280">📍 ${ev.lieu}</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+            <span style="font-size:0.82rem;color:#6b7280">Âge : ${ev.age}</span>
+            <span style="font-size:0.75rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:999px">${ev.prix}</span>
+          </div>
+        </div>
+      </a>
+    </div>`;
   }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// FAVOURITES  (localStorage)
+// ═══════════════════════════════════════════════════════
+const LS_KEY = 'qef_favoris_v1';
+let favoris = new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]'));
+
+function saveFavoris() {
+  localStorage.setItem(LS_KEY, JSON.stringify([...favoris]));
+}
+
+function updateFavBadge() {
+  const badge = document.getElementById('favBadge');
+  const n = favoris.size;
+  badge.textContent = n;
+  badge.style.opacity = n > 0 ? '1' : '0';
+  badge.style.transform = n > 0 ? 'scale(1)' : 'scale(0.6)';
+}
+
+function toggleFavori(e, safeUrl) {
+  e.preventDefault();
+  e.stopPropagation();
+  const url = decodeURIComponent(safeUrl);
+  const btn = e.currentTarget;
+  if (favoris.has(url)) {
+    favoris.delete(url);
+    btn.classList.remove('saved');
+    btn.innerHTML = '🏷️';
+    btn.title = 'Ajouter aux favoris';
+    btn.setAttribute('aria-label', 'Ajouter aux favoris');
+    // Remove card immediately if we're in the favoris tab
+    if (currentTab === 'favoris') afficherFavoris();
+  } else {
+    favoris.add(url);
+    btn.classList.add('saved');
+    btn.innerHTML = '🔖';
+    btn.title = 'Retirer des favoris';
+    btn.setAttribute('aria-label', 'Retirer des favoris');
+    // Pop animation
+    btn.style.transform = 'scale(1.5)';
+    setTimeout(() => { btn.style.transform = ''; }, 220);
+  }
+  saveFavoris();
+  updateFavBadge();
+}
+
+function afficherFavoris() {
+  const liste = tousLesEvenements.filter(ev => favoris.has(ev.URL));
+  document.getElementById('favCount').textContent = liste.length;
+  afficherCartes(liste);
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+let currentTab = 'events';
+
+function setTab(tab) {
+  currentTab = tab;
+  const mainHero = document.querySelector('section.bg-blue-600');
+  const favHero  = document.getElementById('favHero');
+
+  document.getElementById('tab-events').classList.toggle('active', tab === 'events');
+  document.getElementById('tab-favoris').classList.toggle('active', tab === 'favoris');
+
+  if (tab === 'events') {
+    mainHero.style.display = '';
+    favHero.style.display  = 'none';
+    filtrer();
+  } else {
+    mainHero.style.display = 'none';
+    favHero.style.display  = '';
+    afficherFavoris();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -591,6 +726,7 @@ async function chargerDonnees() {
     if (!reponse.ok) throw new Error('Fichier introuvable (404)');
     tousLesEvenements = await reponse.json();
     afficherCartes(tousLesEvenements);
+    updateFavBadge();
   } catch (err) {
     document.getElementById('eventGrid').innerHTML =
       `<p class="text-center col-span-full text-red-400">Erreur : ${err.message}</p>`;
