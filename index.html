@@ -121,6 +121,9 @@
 }
 .chip-x:hover { color: white; }
 
+/* ── Sport ── */
+.tc-sport { color: #ea580c; }
+
 /* ── Bookmark button ── */
 .btn-bookmark {
   position: absolute; top: 10px; left: 10px; z-index: 2;
@@ -132,8 +135,8 @@
   font-size: 1rem; line-height: 1;
   transition: transform 0.15s, background 0.15s;
 }
-.btn-bookmark:hover  { transform: scale(1.18); background: rgba(0,0,0,0.55); }
-.btn-bookmark.saved  { background: #2563eb; }
+.btn-bookmark:hover { transform: scale(1.18); background: rgba(0,0,0,0.55); }
+.btn-bookmark.saved { background: #2563eb; }
 .btn-bookmark.saved:hover { background: #1d4ed8; }
 
 /* ── Tab nav ── */
@@ -143,18 +146,53 @@
   transition: color 0.15s, border-color 0.15s;
   cursor: pointer; user-select: none;
 }
-.tab-link.active            { color: #2563eb; border-color: #2563eb; }
-.tab-link:not(.active)      { color: #6b7280; }
-.tab-link:not(.active):hover{ color: #374151; }
+.tab-link.active             { color: #2563eb; border-color: #2563eb; }
+.tab-link:not(.active)       { color: #6b7280; }
+.tab-link:not(.active):hover { color: #374151; }
 
-/* ── Favoris badge on nav ── */
+/* ── Fav counter badge ── */
 .fav-badge {
   display: inline-flex; align-items: center; justify-content: center;
   background: #ef4444; color: white; border-radius: 999px;
   font-size: 0.6rem; font-weight: 800;
   min-width: 16px; height: 16px; padding: 0 4px;
   margin-left: 4px; line-height: 1;
-  transition: opacity 0.2s, transform 0.2s;
+  transition: opacity 0.2s;
+}
+
+/* ── Wee-QenF hero ── */
+.wee-hero {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #2563eb 100%);
+  padding: 28px 0 24px;
+}
+
+/* Meteo cards */
+.meteo-row { display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap; }
+.meteo-card {
+  flex: 1; min-width: 200px; max-width: 320px;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 20px; padding: 20px 24px; color: white;
+}
+.meteo-card .mc-day   { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+.meteo-card .mc-date  { font-size: 0.85rem; font-weight: 600; opacity: 0.8; margin-top: 2px; }
+.meteo-card .mc-icon  { font-size: 3.2rem; line-height: 1; margin: 12px 0 8px; }
+.meteo-card .mc-temp  { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; }
+.meteo-card .mc-cond  { font-size: 0.83rem; font-weight: 600; opacity: 0.85; margin-top: 3px; }
+.meteo-card .mc-extra {
+  margin-top: 14px; font-size: 0.74rem; font-weight: 600;
+  background: rgba(0,0,0,0.2); border-radius: 999px;
+  padding: 4px 12px; display: inline-block;
+}
+
+/* Wee section day dividers */
+.wee-day-label {
+  font-size: 1rem; font-weight: 800; color: #1e293b;
+  margin: 32px 0 16px; display: flex; align-items: center; gap: 10px;
+}
+.wee-day-label::after {
+  content: ''; flex: 1; height: 2px; background: #e2e8f0; border-radius: 2px;
 }
 </style>
 </head>
@@ -169,6 +207,7 @@
     </div>
     <nav class="hidden md:flex gap-8 text-sm font-semibold">
       <span class="tab-link active" id="tab-events"  onclick="setTab('events')">Événements</span>
+      <span class="tab-link"        id="tab-wee"     onclick="setTab('wee')">Wee-QenF! 🎉</span>
       <span class="tab-link"        id="tab-favoris" onclick="setTab('favoris')">
         Favoris<span class="fav-badge" id="favBadge" style="opacity:0">0</span>
       </span>
@@ -208,6 +247,7 @@
               <div class="dd-opt" data-val="musique">           <span class="dd-chk"></span>🎵 Musique</div>
               <div class="dd-opt" data-val="événement spécial"> <span class="dd-chk"></span>⭐ Événements spéciaux</div>
               <div class="dd-opt" data-val="exposition">        <span class="dd-chk"></span>🖼 Expositions</div>
+              <div class="dd-opt" data-val="sport">             <span class="dd-chk"></span>⚽ Sport</div>
               <span class="dd-clear">✕ Tout effacer</span>
             </div>
           </div>
@@ -289,7 +329,45 @@
   </div>
 </section>
 
-<!-- ─── FAVORIS HERO (hidden until Favoris tab active) ─── -->
+<!-- ─── WEE-QENF HERO ─── -->
+<div id="weeHero" style="display:none" class="wee-hero">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-white">
+          Wee-QenF! <span style="color:#fbbf24">🎉</span>
+        </h1>
+        <p id="weeDateRange" class="text-blue-200 text-sm font-semibold mt-1">Chargement…</p>
+      </div>
+      <span id="weeCount" class="bg-white/20 text-white rounded-full text-sm font-bold px-4 py-1">…</span>
+    </div>
+
+    <div class="meteo-row" id="meteoRow">
+      <!-- Samedi -->
+      <div class="meteo-card">
+        <div class="mc-day">Samedi</div>
+        <div class="mc-date" id="meteoSamDate">—</div>
+        <div class="mc-icon" id="meteoSamIcon">⏳</div>
+        <div class="mc-temp" id="meteoSamTemp">—</div>
+        <div class="mc-cond" id="meteoSamCond">Chargement…</div>
+        <div class="mc-extra" id="meteoSamExtra"></div>
+      </div>
+      <!-- Dimanche -->
+      <div class="meteo-card">
+        <div class="mc-day">Dimanche</div>
+        <div class="mc-date" id="meteoDimDate">—</div>
+        <div class="mc-icon" id="meteoDimIcon">⏳</div>
+        <div class="mc-temp" id="meteoDimTemp">—</div>
+        <div class="mc-cond" id="meteoDimCond">Chargement…</div>
+        <div class="mc-extra" id="meteoDimExtra"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── FAVORIS HERO ─── -->
 <div id="favHero" style="display:none" class="bg-blue-600 py-5">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-3">
     <span style="font-size:1.6rem">🔖</span>
@@ -302,6 +380,8 @@
 
 <!-- ─── EVENT GRID ─── -->
 <main class="max-w-7xl mx-auto px-4 py-8">
+  <!-- Wee day-label sections injected here for wee tab -->
+  <div id="weeLabels" style="display:none"></div>
   <div id="eventGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <p class="text-center col-span-full text-gray-400">Chargement des activités…</p>
   </div>
@@ -421,42 +501,6 @@ function closeAll() {
 document.addEventListener('click', closeAll);
 
 // ═══════════════════════════════════════════════════════
-// DATE UTILITIES
-// ═══════════════════════════════════════════════════════
-const MOIS_FR = {
-  'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,'juin':6,
-  'juillet':7,'août':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12
-};
-
-function parseDateFR(str) {
-  if (!str) return null;
-  const m = str.toLowerCase().match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
-  if (!m) return null;
-  const month = MOIS_FR[m[2]];
-  if (!month) return null;
-  return new Date(parseInt(m[3]), month - 1, parseInt(m[1]));
-}
-
-function parsePlage(dateStr) {
-  if (!dateStr) return { debut: null, fin: null };
-  const m = dateStr.match(/(.+?)\s+au\s+(.+)/i);
-  if (m) return { debut: parseDateFR(m[1]), fin: parseDateFR(m[2]) };
-  const d = parseDateFR(dateStr);
-  return { debut: d, fin: d };
-}
-
-function debutSemaine(d) {
-  const j = new Date(d); j.setDate(j.getDate() - j.getDay()); j.setHours(0,0,0,0); return j;
-}
-function finSemaine(d) {
-  const j = debutSemaine(d); j.setDate(j.getDate() + 6); j.setHours(23,59,59,999); return j;
-}
-function chevaucheFenetre(plage, debut, fin) {
-  if (!plage.debut || !plage.fin) return true;
-  return plage.debut <= fin && plage.fin >= debut;
-}
-
-// ═══════════════════════════════════════════════════════
 // THEME → CSS
 // ═══════════════════════════════════════════════════════
 function themeCSS(t) {
@@ -467,53 +511,85 @@ function themeCSS(t) {
   if (t.includes('musiqu')||t.includes('conc')) return ['tc-musique','bc-musique'];
   if (t.includes('nement')||t.includes('spéc')) return ['tc-event',  'bc-event'];
   if (t.includes('expo'))                       return ['tc-expo',   'bc-expo'];
+  if (t.includes('sport'))                      return ['tc-sport',  'bc-sport'];
   return ['tc-arts','bc-arts'];
 }
 
 // ═══════════════════════════════════════════════════════
-// CARD RENDERING
+// DATE UTILITIES
 // ═══════════════════════════════════════════════════════
-function afficherCartes(liste) {
-  document.getElementById('heroCount').textContent = liste.length;
-  const grid = document.getElementById('eventGrid');
-  if (!liste.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#94a3b8">
-      <div style="font-size:3rem;margin-bottom:12px">${currentTab==='favoris'?'🔖':'🔍'}</div>
-      <p style="font-weight:700;font-size:1.1rem">${currentTab==='favoris'?'Aucun favori pour l\'instant':'Aucune activité trouvée'}</p>
-      <p style="font-size:0.85rem;margin-top:4px">${currentTab==='favoris'?'Cliquez sur 🏷️ sur une activité pour la sauvegarder ici':'Essayez d\'élargir vos filtres'}</p></div>`;
-    return;
+const MOIS_FR = {
+  'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,'juin':6,
+  'juillet':7,'août':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12
+};
+const MOIS_NOM = ['janvier','février','mars','avril','mai','juin',
+                  'juillet','août','septembre','octobre','novembre','décembre'];
+
+// JS \w is ASCII-only — unicode range handles accented months (février, août…)
+const DATE_RE = /(\d{1,2})\s+([A-Za-z\u00C0-\u024F]+)\s+(\d{4})/;
+
+function parseDateFR(str) {
+  if (!str) return null;
+  const m = str.toLowerCase().match(DATE_RE);
+  if (!m) return null;
+  const month = MOIS_FR[m[2]];
+  if (!month) return null;
+  return new Date(parseInt(m[3]), month - 1, parseInt(m[1]));
+}
+
+function parsePlage(dateStr) {
+  if (!dateStr) return { debut: null, fin: null };
+  // "Jusqu'au …" — treat as started long before today
+  const jusqu = dateStr.match(/jusqu['\u2019]au\s+(.+)/i);
+  if (jusqu) return { debut: new Date(2000, 0, 1), fin: parseDateFR(jusqu[1]) };
+  // Collect all full dates, pair first + last
+  const allDates = [];
+  const re = new RegExp(DATE_RE.source, 'gi');
+  let m;
+  while ((m = re.exec(dateStr)) !== null) {
+    const mo = MOIS_FR[m[2].toLowerCase()];
+    if (mo) allDates.push(new Date(parseInt(m[3]), mo - 1, parseInt(m[1])));
   }
-  grid.innerHTML = liste.map(ev => {
-    const [lbl] = themeCSS(ev.theme);
-    const badge   = ev.date ? `<span class="date-badge">${ev.date}</span>` : '';
-    const saved   = favoris.has(ev.URL);
-    const safeUrl = encodeURIComponent(ev.URL || '');
-    return `<div class="event-card" style="position:relative;display:block;border-radius:16px;overflow:hidden;">
-      <button class="btn-bookmark${saved?' saved':''}"
-              onclick="toggleFavori(event,'${safeUrl}')"
-              title="${saved?'Retirer des favoris':'Ajouter aux favoris'}"
-              aria-label="${saved?'Retirer des favoris':'Ajouter aux favoris'}">
-        ${saved ? '🔖' : '🏷️'}
-      </button>
-      <a href="${ev.URL||'#'}" target="_blank" rel="noopener noreferrer"
-         style="display:block;text-decoration:none;color:inherit;">
-        <div style="position:relative" class="event-card-img">
-          <img src="${ev.image||'https://via.placeholder.com/600x300'}"
-               style="width:100%;height:192px;object-fit:cover" alt="${ev.titre}" loading="lazy">
-          ${badge}
-        </div>
-        <div style="padding:20px">
-          <span class="text-xs font-bold uppercase tracking-wider ${lbl}">${ev.theme||''}</span>
-          <h3 style="font-size:1.1rem;font-weight:700;color:#111827;margin:4px 0 6px">${ev.titre}</h3>
-          <p style="font-size:0.83rem;color:#6b7280">📍 ${ev.lieu}</p>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
-            <span style="font-size:0.82rem;color:#6b7280">Âge : ${ev.age}</span>
-            <span style="font-size:0.75rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:999px">${ev.prix}</span>
-          </div>
-        </div>
-      </a>
-    </div>`;
-  }).join('');
+  if (allDates.length >= 2) return { debut: allDates[0], fin: allDates[allDates.length - 1] };
+  if (allDates.length === 1) return { debut: allDates[0], fin: allDates[0] };
+  return { debut: null, fin: null };
+}
+
+function dateISO(d) { return d.toISOString().slice(0, 10); }
+
+function formatDateFR(d) {
+  return `${d.getDate()} ${MOIS_NOM[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function debutSemaine(d) {
+  const j = new Date(d);
+  const day = j.getDay() || 7; // Mon=1 … Sun=7
+  j.setDate(j.getDate() - (day - 1));
+  j.setHours(0, 0, 0, 0); return j;
+}
+function finSemaine(d) {
+  const j = debutSemaine(d); j.setDate(j.getDate() + 6); j.setHours(23,59,59,999); return j;
+}
+function chevaucheFenetre(plage, debut, fin) {
+  if (!plage.debut || !plage.fin) return true;
+  return plage.debut <= fin && plage.fin >= debut;
+}
+
+/** Returns Saturday 00:00 and Sunday 23:59 of the current week. */
+function getWeekend() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dow = today.getDay(); // 0=Sun … 6=Sat
+  const sam = new Date(today);
+  if (dow === 0) {
+    sam.setDate(today.getDate() - 1);   // today is Sunday → Sam = yesterday
+  } else {
+    sam.setDate(today.getDate() + (6 - dow));  // next (or current) Saturday
+  }
+  sam.setHours(0,0,0,0);
+  const dim = new Date(sam);
+  dim.setDate(sam.getDate() + 1);
+  dim.setHours(23,59,59,999);
+  return { sam, dim };
 }
 
 // ═══════════════════════════════════════════════════════
@@ -522,49 +598,210 @@ function afficherCartes(liste) {
 const LS_KEY = 'qef_favoris_v1';
 let favoris = new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]'));
 
-function saveFavoris() {
-  localStorage.setItem(LS_KEY, JSON.stringify([...favoris]));
-}
+function saveFavoris() { localStorage.setItem(LS_KEY, JSON.stringify([...favoris])); }
 
 function updateFavBadge() {
   const badge = document.getElementById('favBadge');
   const n = favoris.size;
   badge.textContent = n;
   badge.style.opacity = n > 0 ? '1' : '0';
-  badge.style.transform = n > 0 ? 'scale(1)' : 'scale(0.6)';
 }
 
 function toggleFavori(e, safeUrl) {
-  e.preventDefault();
-  e.stopPropagation();
+  e.preventDefault(); e.stopPropagation();
   const url = decodeURIComponent(safeUrl);
   const btn = e.currentTarget;
   if (favoris.has(url)) {
     favoris.delete(url);
-    btn.classList.remove('saved');
-    btn.innerHTML = '🏷️';
+    btn.classList.remove('saved'); btn.innerHTML = '🏷️';
     btn.title = 'Ajouter aux favoris';
-    btn.setAttribute('aria-label', 'Ajouter aux favoris');
-    // Remove card immediately if we're in the favoris tab
     if (currentTab === 'favoris') afficherFavoris();
   } else {
     favoris.add(url);
-    btn.classList.add('saved');
-    btn.innerHTML = '🔖';
+    btn.classList.add('saved'); btn.innerHTML = '🔖';
     btn.title = 'Retirer des favoris';
-    btn.setAttribute('aria-label', 'Retirer des favoris');
-    // Pop animation
     btn.style.transform = 'scale(1.5)';
     setTimeout(() => { btn.style.transform = ''; }, 220);
   }
-  saveFavoris();
-  updateFavBadge();
+  saveFavoris(); updateFavBadge();
+}
+
+// ═══════════════════════════════════════════════════════
+// CARD RENDERING
+// ═══════════════════════════════════════════════════════
+function renderCard(ev) {
+  const [lbl] = themeCSS(ev.theme);
+  const badge   = ev.date ? `<span class="date-badge">${ev.date}</span>` : '';
+  const saved   = favoris.has(ev.URL);
+  const safeUrl = encodeURIComponent(ev.URL || '');
+  return `<div class="event-card" style="position:relative;display:block;border-radius:16px;overflow:hidden;">
+    <button class="btn-bookmark${saved?' saved':''}"
+            onclick="toggleFavori(event,'${safeUrl}')"
+            title="${saved?'Retirer des favoris':'Ajouter aux favoris'}">
+      ${saved ? '🔖' : '🏷️'}
+    </button>
+    <a href="${ev.URL||'#'}" target="_blank" rel="noopener noreferrer"
+       style="display:block;text-decoration:none;color:inherit;">
+      <div style="position:relative" class="event-card-img">
+        <img src="${ev.image||'https://via.placeholder.com/600x300'}"
+             style="width:100%;height:192px;object-fit:cover" alt="${ev.titre}" loading="lazy">
+        ${badge}
+      </div>
+      <div style="padding:20px">
+        <span class="text-xs font-bold uppercase tracking-wider ${lbl}">${ev.theme||''}</span>
+        <h3 style="font-size:1.1rem;font-weight:700;color:#111827;margin:4px 0 6px">${ev.titre}</h3>
+        <p style="font-size:0.83rem;color:#6b7280">📍 ${ev.lieu}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+          <span style="font-size:0.82rem;color:#6b7280">Âge : ${ev.age}</span>
+          <span style="font-size:0.75rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:999px">${ev.prix}</span>
+        </div>
+      </div>
+    </a>
+  </div>`;
+}
+
+function emptyState(icon, title, sub) {
+  return `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#94a3b8">
+    <div style="font-size:3rem;margin-bottom:12px">${icon}</div>
+    <p style="font-weight:700;font-size:1.1rem">${title}</p>
+    <p style="font-size:0.85rem;margin-top:4px">${sub}</p></div>`;
+}
+
+function afficherCartes(liste) {
+  document.getElementById('heroCount').textContent = liste.length;
+  const grid = document.getElementById('eventGrid');
+  grid.innerHTML = liste.length
+    ? liste.map(renderCard).join('')
+    : emptyState('🔍','Aucune activité trouvée','Essayez d\'élargir vos filtres');
 }
 
 function afficherFavoris() {
   const liste = tousLesEvenements.filter(ev => favoris.has(ev.URL));
   document.getElementById('favCount').textContent = liste.length;
-  afficherCartes(liste);
+  const grid = document.getElementById('eventGrid');
+  grid.innerHTML = liste.length
+    ? liste.map(renderCard).join('')
+    : emptyState('🔖','Aucun favori pour l\'instant','Cliquez sur 🏷️ sur une activité pour la sauvegarder ici');
+}
+
+function afficherWee() {
+  const { sam, dim } = getWeekend();
+  const samFin = new Date(sam); samFin.setHours(23,59,59,999);
+
+  document.getElementById('weeDateRange').textContent =
+    `Samedi ${formatDateFR(sam)} & Dimanche ${formatDateFR(new Date(sam.getTime() + 86400000))}`;
+
+  // Filter per day
+  const evtsSam = tousLesEvenements.filter(ev =>
+    chevaucheFenetre(parsePlage(ev.date||''), sam, samFin));
+  const dimDebut = new Date(sam.getTime() + 86400000); dimDebut.setHours(0,0,0,0);
+  const evtsDim  = tousLesEvenements.filter(ev =>
+    chevaucheFenetre(parsePlage(ev.date||''), dimDebut, dim));
+
+  // Deduplicate: events on both days shown once (Saturday section)
+  const urlsSam     = new Set(evtsSam.map(e => e.URL));
+  const evtsDimOnly = evtsDim.filter(e => !urlsSam.has(e.URL));
+  const total       = urlsSam.size + evtsDimOnly.length;
+
+  document.getElementById('weeCount').textContent =
+    `${total} activité${total !== 1 ? 's' : ''} ce week-end`;
+
+  const labels = document.getElementById('weeLabels');
+  const grid   = document.getElementById('eventGrid');
+
+  if (!total) {
+    labels.innerHTML = '';
+    grid.innerHTML = emptyState('😴','Aucune activité ce week-end','Revenez bientôt !');
+    return;
+  }
+
+  // Build day sections inside weeLabels; clear main grid
+  let html = '';
+  const samLabel = new Date(sam); samLabel.setHours(0,0,0,0);
+  if (evtsSam.length) {
+    html += `<div class="wee-day-label">🗓 Samedi ${formatDateFR(samLabel)} <span style="font-size:0.8rem;font-weight:600;color:#64748b;margin-left:6px">${evtsSam.length} activité${evtsSam.length!==1?'s':''}</span></div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-2">${evtsSam.map(renderCard).join('')}</div>`;
+  }
+  if (evtsDimOnly.length) {
+    html += `<div class="wee-day-label">🗓 Dimanche ${formatDateFR(dimDebut)} <span style="font-size:0.8rem;font-weight:600;color:#64748b;margin-left:6px">${evtsDimOnly.length} activité${evtsDimOnly.length!==1?'s':''}</span></div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">${evtsDimOnly.map(renderCard).join('')}</div>`;
+  }
+  labels.innerHTML = html;
+  grid.innerHTML   = '';   // content is in labels sections
+}
+
+// ═══════════════════════════════════════════════════════
+// OPEN-METEO WEATHER  (no API key needed)
+// ═══════════════════════════════════════════════════════
+const WMO_ICON = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌧️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'🌨️', 73:'🌨️', 75:'❄️', 77:'❄️',
+  80:'🌦️', 81:'🌧️', 82:'⛈️',
+  85:'🌨️', 86:'❄️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️'
+};
+const WMO_DESC = {
+  0:'Ensoleillé', 1:'Peu nuageux', 2:'Partiellement nuageux', 3:'Couvert',
+  45:'Brouillard', 48:'Brouillard givrant',
+  51:'Bruine légère', 53:'Bruine', 55:'Bruine forte',
+  61:'Pluie légère', 63:'Pluie modérée', 65:'Pluie forte',
+  71:'Neige légère', 73:'Neige modérée', 75:'Neige forte', 77:'Grésil',
+  80:'Averses légères', 81:'Averses', 82:'Averses fortes',
+  85:'Averses de neige légères', 86:'Averses de neige fortes',
+  95:'Orage', 96:'Orage avec grêle', 99:'Orage violent'
+};
+
+async function chargerMeteo() {
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast'
+      + '?latitude=46.8139&longitude=-71.2080'
+      + '&daily=weathercode,temperature_2m_max,temperature_2m_min,'
+      + 'precipitation_probability_max,snowfall_sum'
+      + '&timezone=America%2FToronto&forecast_days=14';
+
+    const data  = await (await fetch(url)).json();
+    const times = data.daily.time;
+    const { sam, dim } = getWeekend();
+    const dimDebut = new Date(sam.getTime() + 86400000); dimDebut.setHours(0,0,0,0);
+
+    function fillCard(prefix, targetDate) {
+      const iso = dateISO(targetDate);
+      const idx = times.indexOf(iso);
+      if (idx === -1) {
+        document.getElementById(`${prefix}Icon`).textContent = '❓';
+        document.getElementById(`${prefix}Cond`).textContent = 'Données indisponibles';
+        return;
+      }
+      const code  = data.daily.weathercode[idx];
+      const tMax  = Math.round(data.daily.temperature_2m_max[idx]);
+      const tMin  = Math.round(data.daily.temperature_2m_min[idx]);
+      const pprob = data.daily.precipitation_probability_max[idx];
+      const snow  = data.daily.snowfall_sum[idx];
+
+      document.getElementById(`${prefix}Date`).textContent  = formatDateFR(targetDate);
+      document.getElementById(`${prefix}Icon`).textContent  = WMO_ICON[code] || '🌡️';
+      document.getElementById(`${prefix}Temp`).textContent  = `${tMax}° / ${tMin}°`;
+      document.getElementById(`${prefix}Cond`).textContent  = WMO_DESC[code] || '';
+      const extra = snow > 0.1
+        ? `❄️ ${snow.toFixed(1)} cm de neige`
+        : pprob > 0
+          ? `💧 ${pprob}% de précipitations`
+          : '✨ Pas de précipitations';
+      document.getElementById(`${prefix}Extra`).textContent = extra;
+    }
+
+    fillCard('meteoSam', sam);
+    fillCard('meteoDim', dimDebut);
+
+  } catch(err) {
+    ['Sam','Dim'].forEach(d => {
+      document.getElementById(`meteo${d}Icon`).textContent = '❓';
+      document.getElementById(`meteo${d}Cond`).textContent = 'Météo indisponible';
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -575,21 +812,25 @@ let currentTab = 'events';
 function setTab(tab) {
   currentTab = tab;
   const mainHero = document.querySelector('section.bg-blue-600');
+  const weeHero  = document.getElementById('weeHero');
   const favHero  = document.getElementById('favHero');
+  const weeLabels= document.getElementById('weeLabels');
+  const eventGrid= document.getElementById('eventGrid');
 
-  document.getElementById('tab-events').classList.toggle('active', tab === 'events');
-  document.getElementById('tab-favoris').classList.toggle('active', tab === 'favoris');
+  ['events','wee','favoris'].forEach(t =>
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab));
 
-  if (tab === 'events') {
-    mainHero.style.display = '';
-    favHero.style.display  = 'none';
-    filtrer();
-  } else {
-    mainHero.style.display = 'none';
-    favHero.style.display  = '';
-    afficherFavoris();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+  mainHero.style.display  = tab === 'events'  ? '' : 'none';
+  weeHero.style.display   = tab === 'wee'     ? '' : 'none';
+  favHero.style.display   = tab === 'favoris' ? '' : 'none';
+  weeLabels.style.display = tab === 'wee'     ? 'block' : 'none';
+  eventGrid.style.display = tab === 'wee'     ? 'none' : '';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (tab === 'events')  filtrer();
+  if (tab === 'favoris') afficherFavoris();
+  if (tab === 'wee')     afficherWee();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -625,38 +866,24 @@ function filtrer() {
   }
 
   const result = tousLesEvenements.filter(ev => {
-    // Thème — OR
-    if (fThemes.size > 0) {
-      if (![...fThemes].some(t => norm(ev.theme).includes(norm(t)))) return false;
-    }
-    // Âge — OR
+    if (fThemes.size > 0 && ![...fThemes].some(t => norm(ev.theme).includes(norm(t)))) return false;
     if (fAges.size > 0) {
       const a = norm(ev.age);
       if (a !== 'tous') {
         const n = parseInt((a.match(/\d+/)||['99'])[0]);
-        const ok = [...fAges].some(range => {
-          if (range === '0-3')  return n <= 3;
-          if (range === '3-5')  return n >= 3 && n <= 6;
-          if (range === '6-12') return n >= 5 && n <= 12;
-          if (range === '13+')  return n >= 12;
+        const ok = [...fAges].some(r => {
+          if (r==='0-3')  return n<=3;
+          if (r==='3-5')  return n>=3&&n<=6;
+          if (r==='6-12') return n>=5&&n<=12;
+          if (r==='13+')  return n>=12;
           return false;
         });
         if (!ok) return false;
       }
     }
-    // Période
-    if (fD && fF) {
-      const plage = parsePlage(ev.date || '');
-      if (!chevaucheFenetre(plage, fD, fF)) return false;
-    }
-    // Quartier — OR
-    if (fQuartiers.size > 0) {
-      if (![...fQuartiers].some(q => norm(q) === norm(ev.quartier))) return false;
-    }
-    // Texte
-    if (fTexte) {
-      if (!norm((ev.titre||'') + ' ' + (ev.description||'')).includes(fTexte)) return false;
-    }
+    if (fD && fF && !chevaucheFenetre(parsePlage(ev.date||''), fD, fF)) return false;
+    if (fQuartiers.size > 0 && ![...fQuartiers].some(q => norm(q)===norm(ev.quartier))) return false;
+    if (fTexte && !norm((ev.titre||'')+' '+(ev.description||'')).includes(fTexte)) return false;
     return true;
   });
 
@@ -667,40 +894,35 @@ function filtrer() {
 // ═══════════════════════════════════════════════════════
 // ACTIVE FILTER SUMMARY
 // ═══════════════════════════════════════════════════════
-const THEME_LBL  = { 'arts':'🎨 Arts','cinéma':'🎬 Cinéma','visite guidée':'🏛 Visites','musique':'🎵 Musique','événement spécial':'⭐ Événements','exposition':'🖼 Expos' };
-const AGE_LBL    = { '0-3':'0–3 ans','3-5':'3–5 ans','6-12':'6–12 ans','13+':'13 ans +' };
-const PERIOD_LBL = { 'today':"Aujourd'hui",'week':'Cette semaine','month':'Ce mois','nextmonth':'Mois prochain' };
+const THEME_LBL  = {'arts':'🎨 Arts','cinéma':'🎬 Cinéma','visite guidée':'🏛 Visites','musique':'🎵 Musique','événement spécial':'⭐ Événements','exposition':'🖼 Expos','sport':'⚽ Sport'};
+const AGE_LBL    = {'0-3':'0–3 ans','3-5':'3–5 ans','6-12':'6–12 ans','13+':'13 ans +'};
+const PERIOD_LBL = {'today':"Aujourd'hui",'week':'Cette semaine','month':'Ce mois','nextmonth':'Mois prochain'};
 
 function updateSummary() {
-  const bar   = document.getElementById('summaryBar');
+  const bar = document.getElementById('summaryBar');
   const chips = document.getElementById('summaryChips');
-  const tags  = [];
+  const tags = [];
 
-  fThemes.forEach(v    => tags.push({ label: THEME_LBL[v]||v,            rm: () => { fThemes.delete(v);    ddTheme.reset();    filtrer(); } }));
-  fAges.forEach(v      => tags.push({ label: AGE_LBL[v]||v,              rm: () => { fAges.delete(v);      ddAge.reset();      filtrer(); } }));
-  if (fPeriode)          tags.push({ label: PERIOD_LBL[fPeriode]||fPeriode, rm: () => { fPeriode=''; ddPeriode.reset(); filtrer(); } });
-  fQuartiers.forEach(v => tags.push({ label: v,                           rm: () => { fQuartiers.delete(v); ddQuartier.reset(); filtrer(); } }));
-  if (fTexte)            tags.push({ label: `"${fTexte}"`,                rm: () => { fTexte=''; syncTexte(''); filtrer(); } });
+  fThemes.forEach(v    => tags.push({label:THEME_LBL[v]||v,         rm:()=>{fThemes.delete(v);    ddTheme.reset();    filtrer();}}));
+  fAges.forEach(v      => tags.push({label:AGE_LBL[v]||v,           rm:()=>{fAges.delete(v);      ddAge.reset();      filtrer();}}));
+  if (fPeriode)          tags.push({label:PERIOD_LBL[fPeriode]||fPeriode, rm:()=>{fPeriode='';ddPeriode.reset();      filtrer();}});
+  fQuartiers.forEach(v => tags.push({label:v,                        rm:()=>{fQuartiers.delete(v); ddQuartier.reset(); filtrer();}}));
+  if (fTexte)            tags.push({label:`"${fTexte}"`,             rm:()=>{fTexte='';syncTexte('');                 filtrer();}});
 
   if (!tags.length) { bar.classList.add('hidden'); bar.classList.remove('flex'); return; }
   bar.classList.remove('hidden'); bar.classList.add('flex');
-  chips.innerHTML = tags.map((t, i) =>
-    `<span class="chip">${t.label}<button class="chip-x" data-i="${i}">✕</button></span>`
-  ).join('');
+  chips.innerHTML = tags.map((t,i) =>
+    `<span class="chip">${t.label}<button class="chip-x" data-i="${i}">✕</button></span>`).join('');
   chips.querySelectorAll('.chip-x').forEach(b =>
-    b.addEventListener('click', () => { tags[+b.dataset.i].rm(); })
-  );
+    b.addEventListener('click', () => tags[+b.dataset.i].rm()));
 }
 
-function syncTexte(val) {
-  document.getElementById('filtreTexte').value = val;
-}
+function syncTexte(val) { document.getElementById('filtreTexte').value = val; }
 
 function clearAll() {
-  fThemes.clear(); fAges.clear(); fPeriode = ''; fQuartiers.clear(); fTexte = '';
+  fThemes.clear(); fAges.clear(); fPeriode=''; fQuartiers.clear(); fTexte='';
   ddTheme.reset(); ddAge.reset(); ddPeriode.reset(); ddQuartier.reset();
-  syncTexte('');
-  filtrer();
+  syncTexte(''); filtrer();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -711,10 +933,8 @@ const ddAge      = new Dropdown('dd-age',      'multi',  sel => { fAges      = s
 const ddPeriode  = new Dropdown('dd-periode',  'single', val => { fPeriode   = val; filtrer(); });
 const ddQuartier = new Dropdown('dd-quartier', 'multi',  sel => { fQuartiers = sel; filtrer(); });
 
-// Search input
-function onSearch(v) { fTexte = norm(v); filtrer(); }
 document.getElementById('filtreTexte').addEventListener('input', e => {
-  onSearch(e.target.value);
+  fTexte = norm(e.target.value); filtrer();
 });
 
 // ═══════════════════════════════════════════════════════
@@ -733,7 +953,10 @@ async function chargerDonnees() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', chargerDonnees);
+document.addEventListener('DOMContentLoaded', () => {
+  chargerDonnees();
+  chargerMeteo(); // pre-fetch météo so it's ready when user clicks Wee tab
+});
 </script>
 </body>
 </html>
