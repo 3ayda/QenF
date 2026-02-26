@@ -96,7 +96,7 @@ def parse_date_fr(text):
 
 def event_in_window(dates_text):
     dt = dates_text.lower()
-    m = re.search(r"(\d{1,2}\s+\w+\s+\d{4})\s+au\s+(\d{1,2}\s+\w+\s+\d{4})", dt)
+    m = re.search(r"(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})\s+au\s+(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})", dt)
     if m:
         start = parse_date_fr(m.group(1))
         end   = parse_date_fr(m.group(2))
@@ -151,12 +151,12 @@ def format_date(dates_text):
     if not dates_text:
         return ""
     m = re.search(
-        r"(\d{1,2}\s+\w+\s+\d{4})\s+au\s+(\d{1,2}\s+\w+\s+\d{4})",
+        r"(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})\s+au\s+(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})",
         dates_text, re.IGNORECASE
     )
     if m:
         return f"{m.group(1)} au {m.group(2)}"
-    m = re.search(r"\d{1,2}\s+\w+\s+\d{4}", dates_text)
+    m = re.search(r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}", dates_text)
     if m:
         return m.group(0)
     return ""
@@ -250,19 +250,32 @@ def scrape_event_detail(url):
             prix_raw = line
             break
 
-    # Dates — search info section first, then full page text
-    # Use [A-Za-zÀ-ÿ]+ to safely match accented month names like février, août
+    # Dates — ONLY extract from the Informations section text.
+    # Never fall back to main.get_text() which includes "Autres activités"
+    # recommendations containing other events' dates (cross-contamination bug).
     dates_text = ""
-    DATE_RE = re.compile(
-        r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+"
-        r"\s+\d{4}(?:\s+au\s+\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})?",
+    DATE_RANGE_RE = re.compile(
+        r"(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})"
+        r"\s+au\s+"
+        r"(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})",
         re.IGNORECASE
     )
-    for search_text in (info_text, main.get_text(" ", strip=True)):
-        dm = DATE_RE.search(search_text)
-        if dm:
-            dates_text = dm.group(0).strip()
-            break
+    DATE_SINGLE_RE = re.compile(
+        r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}",
+        re.IGNORECASE
+    )
+    if info_text:
+        # Prefer a full date range "X au Y"
+        m = DATE_RANGE_RE.search(info_text)
+        if m:
+            dates_text = f"{m.group(1)} au {m.group(2)}"
+        else:
+            # Single date
+            m = DATE_SINGLE_RE.search(info_text)
+            if m:
+                dates_text = m.group(0).strip()
+    # If Informations had no date, leave dates_text empty rather than
+    # risk picking up dates from "Autres activités" or other sections.
 
     # Lieu
     lieu = "MNBAQ"
