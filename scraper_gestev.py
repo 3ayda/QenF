@@ -234,22 +234,93 @@ def normalize_price(raw: str) -> str:
     return cleaned[:80] if cleaned else "Voir le site"
 
 
-def best_image(soup_el) -> str:
-    """Extract the best image URL from a card or detail element."""
-    for attr in ("src", "data-src", "data-lazy-src", "data-srcset"):
-        for img in soup_el.find_all("img"):
-            val = img.get(attr, "")
-            if val and val.startswith("http") and not any(
-                x in val for x in ["placeholder", "blank", "pixel", "logo", "loading"]
-            ):
-                # data-srcset may have "url 1x, url2 2x" — take first
-                val = val.split(",")[0].split(" ")[0]
-                return val
-    # Also try style="background-image: url(…)"
+def best_image(soup_el, page_url: str = "") -> str:
+    """
+    Extract the best image URL from a soup element or full page.
+    Handles all modern patterns:
+      - <img src / data-src / data-lazy-src / data-original / data-bg>
+      - <img srcset / data-srcset> (takes highest-res candidate)
+      - <source srcset> inside <picture>
+      - style="background-image: url(...)" on any element
+      - data-bg / data-background attributes
+      - og:image / twitter:image meta tags (when soup_el is the full page)
+    Relative URLs are made absolute using BASE_URL.
+    """
+    SKIP = re.compile(
+        r"placeholder|blank|pixel|logo|loading|spinner|avatar|icon|favicon"
+        r"|1x1|transparent|spacer|data:image/gif",
+        re.I
+    )
+
+    def clean(val: str) -> str:
+        """Normalise a raw attribute value → absolute URL, or ''."""
+        if not val:
+            return ""
+        # srcset: "url1 1x, url2 2x" or "url1 300w, url2 600w" → take last (largest)
+        if " " in val.strip() and ("," in val or val.strip().split()[-1][-1] in "wx"):
+            candidates = [p.strip().split()[0] for p in val.split(",") if p.strip()]
+            val = candidates[-1] if candidates else val.split()[0]
+        val = val.strip()
+        if not val or val.startswith("data:"):
+            return ""
+        # Make absolute
+        if val.startswith("//"):
+            val = "https:" + val
+        elif val.startswith("/"):
+            val = BASE_URL.rstrip("/") + val
+        if not val.startswith("http"):
+            return ""
+        if SKIP.search(val):
+            return ""
+        return val
+
+    # 1. og:image / twitter:image meta — highest quality, only on full pages
+    for meta in soup_el.find_all("meta"):
+        prop = meta.get("property", "") + meta.get("name", "")
+        if "og:image" in prop or "twitter:image" in prop:
+            v = clean(meta.get("content", ""))
+            if v:
+                return v
+
+    # 2. <picture> → <source srcset> (highest res)
+    for source in soup_el.find_all("source"):
+        v = clean(source.get("srcset", ""))
+        if v:
+            return v
+
+    # 3. <img> — try attributes in priority order
+    IMG_ATTRS = (
+        "data-src", "data-lazy-src", "data-original",
+        "data-srcset", "srcset", "src",
+        "data-bg", "data-background",
+    )
+    for img in soup_el.find_all("img"):
+        for attr in IMG_ATTRS:
+            v = clean(img.get(attr, ""))
+            if v:
+                return v
+
+    # 4. style="background-image: url(...)" on any element
     for el in soup_el.find_all(style=True):
-        m = re.search(r"background(?:-image)?\s*:\s*url\(['\"]?(https?[^'\")\s]+)", el["style"])
+        m = re.search(
+            r"background(?:-image)?\s*:\s*url\(\s*['\"]?([^'\")\s]+)['\"]?\s*\)",
+            el["style"], re.I
+        )
         if m:
-            return m.group(1)
+            v = clean(m.group(1))
+            if v:
+                return v
+
+    # 5. data-bg / data-background on non-img elements (common in WordPress themes)
+    for el in soup_el.find_all(attrs={"data-bg": True}):
+        v = clean(el["data-bg"])
+        if v:
+            return v
+    for el in soup_el.find_all(attrs={"data-background": True}):
+        v = clean(el["data-background"])
+        if v:
+            return v
+
     return ""
 
 
@@ -257,86 +328,149 @@ def best_image(soup_el) -> str:
 
 def parse_listing(soup: BeautifulSoup) -> list:
     """
-    Extract event stubs from a listing page.
-    Gestev's calendar uses cards with links to /evenement/{slug}/.
-    We probe several selector strategies in order of specificity.
+    Extract event stubs from a Gestev listing page.
+
+    Gestev page structure (confirmed from live example):
+      <div class="card / event-card / …">
+        <a href="/calendrier-evenements/{slug}/">   ← internal detail link
+          <img …>
+          <h3>EVENT TITLE</h3>
+          <span>Venue name</span>
+          <span>28 février 2026</span>
+        </a>
+        <a href="https://www.ticketmaster.ca/…">Billets</a>  ← CTA, IGNORE
+      </div>
+
+    Strategy:
+      1. Find all <a> whose href contains '/calendrier-evenements/' and a
+         slug (i.e. more than just the base listing path).
+      2. For each such anchor, walk UP to its card container (parent/grandparent)
+         so we can also read sibling text (venue, date) outside the <a>.
+      3. Skip any <a> whose text is a CTA word ("billets", "acheter", etc.)
+         or whose href points to an external domain.
     """
     events = []
     seen   = set()
 
-    # ── Strategy 1: any <a> pointing to /evenement/ detail pages ──
-    candidates = soup.select(
-        "a[href*='/evenement/'], "
-        "a[href*='/event/'], "
-        "a[href*='/spectacle/'], "
-        "a[href*='/activite/']"
-    )
+    CTA_WORDS = {"billets", "acheter", "buy", "tickets", "réserver",
+                 "commander", "voir", "more", "details"}
 
-    # ── Strategy 2: fallback — all cards with an <img> + <h2>/<h3> ──
-    if not candidates:
-        candidates = []
+    def is_detail_href(href: str) -> bool:
+        """True if href is an internal Gestev event detail URL."""
+        if not href:
+            return False
+        # Must contain /calendrier-evenements/ AND a slug (not just the listing root)
+        if "/calendrier-evenements/" not in href:
+            return False
+        # Must be internal (no external domain after the path segment)
+        clean = href.split("?")[0].rstrip("/")
+        slug  = clean.split("/calendrier-evenements/")[-1].strip("/")
+        return len(slug) > 0   # has an actual slug, not just the listing page
+
+    def card_container(a_tag):
+        """Walk up from <a> to find the nearest block that looks like a card."""
+        el = a_tag.parent
+        for _ in range(4):   # at most 4 levels up
+            if el is None or el.name in ("body", "main", "section", "html"):
+                return a_tag  # give up, use the <a> itself
+            cls = " ".join(el.get("class", [])).lower()
+            if any(k in cls for k in ("card", "event", "item", "article", "post")):
+                return el
+            el = el.parent
+        return a_tag.parent or a_tag
+
+    # ── Strategy 1: <a href*='/calendrier-evenements/{slug}'> ────────
+    detail_links = [
+        a for a in soup.find_all("a", href=True)
+        if is_detail_href(a.get("href", ""))
+    ]
+
+    # ── Strategy 2: fallback — any <a> containing img + heading ──────
+    if not detail_links:
+        print("   ⚠️  Strategy 1 found 0 links — falling back to img+heading scan")
         for a in soup.find_all("a", href=True):
             href = a.get("href", "")
             if not href or href == "#" or href.startswith("javascript"):
                 continue
+            # Skip external CTA links
+            if href.startswith("http") and BASE_URL not in href:
+                continue
             if a.find(["h2", "h3", "h4"]) and a.find("img"):
-                candidates.append(a)
+                link_text = a.get_text(strip=True).lower()
+                if link_text not in CTA_WORDS:
+                    detail_links.append(a)
 
-    for a in candidates:
+    for a in detail_links:
         href = a.get("href", "")
         if not href:
             continue
+
+        # Skip CTAs: short all-lowercase text matching known button words
+        link_text = a.get_text(strip=True)
+        if link_text.lower().strip() in CTA_WORDS or len(link_text) < 3:
+            continue
+
+        # Skip external URLs (ticketmaster, etc.)
         full_url = urljoin(BASE_URL, href).split("?")[0].rstrip("/") + "/"
+        if BASE_URL not in full_url:
+            continue
         if full_url in seen or full_url == BASE_URL + "/":
             continue
         seen.add(full_url)
 
-        # Title — h2 > h3 > h4 > alt text > link text
+        # Use the card container so we can read ALL text (including outside <a>)
+        container = card_container(a)
+
+        # ── Title: h1>h2>h3>h4 inside container; skip CTA <a> text ──
         titre = ""
-        for tag in ("h2", "h3", "h4", "p"):
-            el = a.find(tag)
+        for tag in ("h1", "h2", "h3", "h4"):
+            el = container.find(tag)
             if el:
                 t = el.get_text(strip=True)
                 if t and len(t) > 2:
                     titre = t
                     break
         if not titre:
-            titre = a.get_text(strip=True)[:80]
+            # Try alt text of the main image
+            img = container.find("img")
+            if img:
+                titre = img.get("alt", "").strip()
         if not titre or len(titre) < 3:
             continue
 
-        # Image
-        image = best_image(a)
+        # ── Image ──────────────────────────────────────────────────
+        image = best_image(container)
 
-        # All visible text in card
-        card_text = a.get_text(" ", strip=True)
+        # ── All visible text in the card ───────────────────────────
+        card_text = container.get_text(" ", strip=True)
 
-        # Date
+        # ── Date ───────────────────────────────────────────────────
         date_str = extract_date_str(card_text)
 
-        # Lieu / Venue — look for text that isn't the title or date
+        # ── Venue — first short text chunk that isn't title or date ─
         lieu_raw = ""
-        for span in a.find_all(["span", "p", "div"]):
-            t = span.get_text(strip=True)
-            if (t and t != titre and not re.search(r"\d{4}", t)
-                    and 3 < len(t) < 80 and t.lower() not in ("famille",)):
+        for el in container.find_all(["span", "p", "div", "li"]):
+            t = el.get_text(strip=True)
+            if (t and t != titre
+                    and t.lower() not in CTA_WORDS
+                    and not re.search(r"\d{4}", t)
+                    and 3 < len(t) < 80):
                 lieu_raw = t
                 break
 
-        # Price — look for $ or "gratuit"
+        # ── Price ──────────────────────────────────────────────────
         prix_raw = ""
-        for string in a.stripped_strings:
+        for string in container.stripped_strings:
             if re.search(r"\$|gratuit|inclus", string, re.I):
                 prix_raw = string.strip()
                 break
 
-        # Category span — often a badge/tag inside the card
+        # ── Category badge ─────────────────────────────────────────
         categorie = ""
-        for el in a.find_all(["span", "div", "p"]):
+        for el in container.find_all(["span", "div"]):
             cls = " ".join(el.get("class", []))
             t   = el.get_text(strip=True)
-            if ("categ" in cls.lower() or "tag" in cls.lower() or "badge" in cls.lower()
-                    or "type" in cls.lower()):
+            if any(k in cls.lower() for k in ("categ", "tag", "badge", "type", "label")):
                 if t and len(t) < 40:
                     categorie = t
                     break
@@ -379,7 +513,7 @@ def has_next_page(soup: BeautifulSoup, current_page: int) -> bool:
 # ── Detail page scraper ────────────────────────────────────────────
 
 def scrape_detail(url: str) -> dict:
-    """Fetch event detail page for richer data: description, price, image, lieu."""
+    """Fetch event detail page for richer data: title, description, price, image, lieu."""
     soup = fetch(url)
     if not soup:
         return {}
@@ -390,31 +524,153 @@ def scrape_detail(url: str) -> dict:
 
     full_text = body.get_text(" ", strip=True)
 
-    # Description — first substantial paragraph
+    # ── Title — from <h1> on the detail page (most reliable) ─────────
+    titre = ""
+    h1 = body.find("h1")
+    if h1:
+        titre = h1.get_text(strip=True)
+    # Fallback: og:title meta
+    if not titre:
+        og = soup.find("meta", property="og:title") or soup.find("meta", attrs={"name": "og:title"})
+        if og:
+            titre = og.get("content", "").strip()
+
+    # ── Image — full-page pass (og:image first, then body) ───────────
+    # Pass the full soup so og:image meta in <head> is found
+    image = best_image(soup)
+    if not image:
+        image = best_image(body)
+
+    # ── Description — multi-strategy ─────────────────────────────────
     desc = ""
-    for p in body.find_all("p"):
-        t = p.get_text(" ", strip=True)
-        if len(t) > 60 and not re.search(r"cookie|politique|©", t, re.I):
-            desc = t[:400]
-            break
+    JUNK = re.compile(
+        r"cookie|politique de confidentialité|©|javascript|droits réservés"
+        r"|all rights reserved|newsletter|abonnez|inscrivez|partager|share"
+        r"|facebook|twitter|instagram|linkedin|youtube",
+        re.I
+    )
 
-    # Better image from detail page
-    image = best_image(body)
+    # Strategy A: og:description meta (cleanest, editor-written)
+    og_desc = (soup.find("meta", property="og:description")
+               or soup.find("meta", attrs={"name": "description"}))
+    if og_desc:
+        v = og_desc.get("content", "").strip()
+        if len(v) > 30 and not JUNK.search(v):
+            desc = v[:500]
 
-    # Venue — look for address or venue name patterns
+    # Strategy B: explicit description container by class/id/itemprop
+    if not desc:
+        for selector in [
+            "[class*='description']", "[class*='intro']", "[class*='summary']",
+            "[class*='content']",     "[class*='texte']",  "[class*='text']",
+            "[class*='body']",        "[class*='excerpt']","[class*='about']",
+            "[itemprop='description']",
+        ]:
+            try:
+                el = body.select_one(selector)
+            except Exception:
+                el = None
+            if el:
+                t = el.get_text(" ", strip=True)
+                if len(t) > 50 and not JUNK.search(t):
+                    desc = t[:500]
+                    break
+
+    # Strategy C: schema.org JSON-LD block
+    if not desc:
+        for script in soup.find_all("script", type="application/ld+json"):
+            try:
+                import json as _json
+                data = _json.loads(script.string or "")
+                # data can be a list or dict
+                items = data if isinstance(data, list) else [data]
+                for item in items:
+                    v = item.get("description", "")
+                    if isinstance(v, str) and len(v) > 30:
+                        desc = v[:500]
+                        break
+            except Exception:
+                pass
+            if desc:
+                break
+
+    # Strategy D: walk all <p> tags — first one > 60 chars that isn't junk
+    if not desc:
+        for p in body.find_all("p"):
+            t = p.get_text(" ", strip=True)
+            if len(t) > 60 and not JUNK.search(t):
+                desc = t[:500]
+                break
+
+    # Strategy E: walk <div> / <section> text blocks (when no <p> available)
+    if not desc:
+        for el in body.find_all(["div", "section"]):
+            # Skip deeply nested wrappers — only look at "leaf-ish" blocks
+            children_tags = [c.name for c in el.children if hasattr(c, "name") and c.name]
+            if "div" in children_tags or "section" in children_tags:
+                continue
+            t = el.get_text(" ", strip=True)
+            if len(t) > 80 and not JUNK.search(t):
+                desc = t[:500]
+                break
+
+    # Clean up description: collapse whitespace, strip HTML artefacts
+    if desc:
+        desc = re.sub(r"\s{2,}", " ", desc).strip()
+
+    # ── Venue ─────────────────────────────────────────────────────────
     lieu = ""
-    for pattern in [
-        r"((?:Centre|Salle|Colisée|Amphithéâtre|Aréna|Place|Agora|Pavillon)[^,\n]{3,60})",
-        r"((?:\d{1,4}\s+[A-Za-z\u00C0-\u024F]+(?:\s+[A-Za-z\u00C0-\u024F]+){1,4})[,\s]+Québec)",
-    ]:
+    venue_patterns = [
+        r"(Centre\s+Vidéotron|Centre\s+Videotron)",
+        r"((?:Centre|Salle|Colisée|Amphithéâtre|Aréna|Théâtre|Place|Agora|Pavillon|Auditorium)"
+        r"[^,\n\.\<]{3,60})",
+        r"(\d{1,4}\s+[A-Za-z\u00C0-\u024F][^,\n]{5,50},\s*Québec)",
+    ]
+    for pattern in venue_patterns:
         m = re.search(pattern, full_text, re.I)
         if m:
             lieu = m.group(1).strip()
             break
+    if not lieu:
+        # schema.org / microdata location
+        for el in body.find_all(True, attrs={"itemprop": "location"}):
+            t = el.get_text(strip=True)
+            if t:
+                lieu = t[:80]
+                break
+    if not lieu:
+        # CSS class heuristic
+        for el in body.find_all(
+            attrs={"class": re.compile(r"venue|location|place|salle", re.I)}
+        ):
+            t = el.get_text(strip=True)
+            if t and len(t) < 80:
+                lieu = t
+                break
+    # schema.org JSON-LD location
+    if not lieu:
+        for script in soup.find_all("script", type="application/ld+json"):
+            try:
+                import json as _json
+                data = _json.loads(script.string or "")
+                items = data if isinstance(data, list) else [data]
+                for item in items:
+                    loc = item.get("location", {})
+                    if isinstance(loc, dict):
+                        name = loc.get("name", "")
+                        addr = loc.get("address", "")
+                        if isinstance(addr, dict):
+                            addr = addr.get("streetAddress", "")
+                        lieu = (name or addr or "").strip()[:80]
+                    if lieu:
+                        break
+            except Exception:
+                pass
+            if lieu:
+                break
 
-    # Price
+    # ── Price ─────────────────────────────────────────────────────────
     prix_raw = ""
-    # Look for structured price blocks first
     for kw_pattern in [
         r"(?:prix|tarif|coût|admission|billet)[^\n:]*:?\s*([^\n]{3,60})",
         r"(gratuit\b[^\n]{0,40})",
@@ -426,10 +682,11 @@ def scrape_detail(url: str) -> dict:
             prix_raw = m.group(1).strip()
             break
 
-    # Date — in case listing page missed it
+    # ── Date ──────────────────────────────────────────────────────────
     date_str = extract_date_str(full_text)
 
     return {
+        "titre":       titre,
         "description": desc,
         "image":       image,
         "lieu":        lieu,
@@ -494,6 +751,9 @@ def main() -> list:
     evenements: list = []
     skipped = 0
 
+    CTA_TITLES = {"billets", "acheter", "buy", "tickets", "réserver",
+                  "commander", "voir plus", "more", "details"}
+
     for i, card in enumerate(unique):
         titre = card["titre"]
         print(f"   [{i+1}/{len(unique)}] {titre}")
@@ -506,6 +766,23 @@ def main() -> list:
 
         detail    = scrape_detail(card["url"])
         time.sleep(0.8)
+
+        # Prefer the detail-page <h1> title — it's authoritative
+        # Override listing title if it looks like a CTA or is very short
+        detail_titre = detail.get("titre", "").strip()
+        if detail_titre and (
+            titre.lower().strip() in CTA_TITLES
+            or len(titre) < 5
+            or not any(c.isalpha() for c in titre)
+        ):
+            titre = detail_titre
+            print(f"        ℹ️  Titre corrigé → {titre}")
+
+        # Skip if we still have no real title
+        if not titre or titre.lower().strip() in CTA_TITLES or len(titre) < 3:
+            print(f"        ⏩ Titre invalide – ignoré.")
+            skipped += 1
+            continue
 
         # Merge data — detail wins over listing stub
         date_str  = card["date_str"] or detail.get("date_str", "")
@@ -561,10 +838,22 @@ def _debug():
         print("❌ Could not fetch page.")
         return
 
-    # Show all <a> tags that look like event links
-    print("── All <a> tags with /evenement/, /event/, /spectacle/ ──")
-    for a in soup.select("a[href*='/evenement/'], a[href*='/event/'], a[href*='/spectacle/']"):
-        print(f"  href={a.get('href', '')[:80]}  text={a.get_text(strip=True)[:40]}")
+    # Show all <a> tags pointing to /calendrier-evenements/{slug}/
+    print("── <a href*='/calendrier-evenements/'> links (strategy 1) ──")
+    found = 0
+    for a in soup.find_all("a", href=True):
+        href = a.get("href", "")
+        if "/calendrier-evenements/" in href:
+            slug = href.split("/calendrier-evenements/")[-1].strip("/")
+            if slug:   # has a real slug
+                found += 1
+                print(f"  [{found}] href={href[:80]}  text={a.get_text(strip=True)[:40]!r}")
+    if not found:
+        print("  (none found — check if URL pattern changed)")
+
+    print("\n── All <a> on page (first 20, with text) ──")
+    for i, a in enumerate(soup.find_all("a", href=True)[:20]):
+        print(f"  href={a.get('href','')[:70]}  text={a.get_text(strip=True)[:40]!r}")
 
     print("\n── First 3 cards (any <a> with img+heading) ──")
     count = 0
@@ -577,8 +866,33 @@ def _debug():
                 print(f"    <{el.name}> class={el.get('class',[])} text={txt!r} src={src!r}")
             count += 1
 
-    print("\n── Page raw text (first 1500 chars) ──")
-    print(soup.get_text(" ", strip=True)[:1500])
+    print("\n── Page raw text (first 2000 chars) ──")
+    print(soup.get_text(" ", strip=True)[:2000])
+
+
+def _debug_detail(url: str = "https://www.gestev.com/calendrier-evenements/disney-sur-glace/"):
+    """
+    Diagnostic tool: print exactly what scrape_detail extracts from a given URL.
+    Run with: python -c "import scraper_gestev; scraper_gestev._debug_detail()"
+    """
+    print(f"Fetching detail: {url}\n")
+    result = scrape_detail(url)
+    for k, v in result.items():
+        print(f"  {k:15}: {str(v)[:200]!r}")
+
+    # Also dump raw <head> meta and first img tags for diagnosis
+    soup = fetch(url)
+    if not soup:
+        return
+    print("\n── <meta> tags ──")
+    for m in soup.find_all("meta")[:15]:
+        print(f"  {dict(m.attrs)}")
+    print("\n── first 10 <img> tags ──")
+    for img in soup.find_all("img")[:10]:
+        print(f"  {dict(img.attrs)}")
+    print("\n── JSON-LD scripts ──")
+    for script in soup.find_all("script", type="application/ld+json"):
+        print(f"  {(script.string or '')[:300]}")
 
 
 # ── Standalone run ───────────────────────────────────────────────
