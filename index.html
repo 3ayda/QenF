@@ -576,7 +576,7 @@
   <!-- Wee tab content -->
   <div id="weeLabels" style="display:none">
     <!-- Notre sélection accordion — above day toggle -->
-    <div style="margin-bottom:16px">
+    <div style="margin-bottom:8px">
       <div class="wee-selection-bar" id="selBar" onclick="toggleSelection()">
         <div>
           <div class="sel-title">Découvrez notre sélection d'activités pour la fin de semaine</div>
@@ -1274,6 +1274,9 @@ function setTab(tab) {
   weeLabels.style.display = tab === 'wee'     ? 'block' : 'none';
   eventGrid.style.display = tab === 'wee'     ? 'none' : '';
   weeBanner.style.display = tab === 'events'  ? '' : 'none';
+
+  // Tighten top padding on wee tab so green bar sits close to meteo hero
+  document.querySelector('main').style.paddingTop = tab === 'wee' ? '16px' : '';
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
