@@ -601,6 +601,30 @@
   <div id="eventGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <p class="text-center col-span-full text-gray-400">Chargement des activités…</p>
   </div>
+
+  <!-- ─── Explorer la fin de semaine banner ─── -->
+  <div id="weeBanner"
+       onclick="setTab('wee')"
+       style="cursor:pointer"
+       class="mt-10 rounded-2xl overflow-hidden flex items-center justify-between gap-4
+              bg-gradient-to-r from-blue-800 to-blue-600 px-8 py-6 shadow-lg
+              hover:shadow-xl transition-shadow group">
+    <div>
+      <p class="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Ce week-end</p>
+      <h2 class="text-white text-xl md:text-2xl font-extrabold leading-tight">
+        Explorer la fin de semaine
+      </h2>
+      <p class="text-blue-200 text-sm font-medium mt-1">
+        Météo, sélection d'activités &amp; suggestions pour samedi et dimanche
+      </p>
+    </div>
+    <div class="flex-shrink-0">
+      <span class="bg-white text-blue-700 text-sm font-bold px-5 py-2 rounded-full
+                   group-hover:bg-blue-50 transition-colors whitespace-nowrap">
+        Voir →
+      </span>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -1239,6 +1263,7 @@ function setTab(tab) {
   const favHero  = document.getElementById('favHero');
   const weeLabels= document.getElementById('weeLabels');
   const eventGrid= document.getElementById('eventGrid');
+  const weeBanner= document.getElementById('weeBanner');
 
   ['events','wee','favoris'].forEach(t =>
     document.getElementById(`tab-${t}`).classList.toggle('active', t === tab));
@@ -1248,6 +1273,7 @@ function setTab(tab) {
   favHero.style.display   = tab === 'favoris' ? '' : 'none';
   weeLabels.style.display = tab === 'wee'     ? 'block' : 'none';
   eventGrid.style.display = tab === 'wee'     ? 'none' : '';
+  weeBanner.style.display = tab === 'events'  ? '' : 'none';
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
