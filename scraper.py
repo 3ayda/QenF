@@ -3,9 +3,11 @@ scraper.py – Orchestrateur principal
 Appelle tous les scrapers de sources et produit un evenements.json unifié.
 
 Sources :
-  - MNBAQ       (scraper_mnbaq.py)
+  - MNBAQ                   (scraper_mnbaq.py)
   - Bibliothèque de Québec  (scraper_bdq.py)
   - Moulin des Jésuites     (scraper_moulin.py)
+  - Musée de la civilisation(scraper_mcq.py)
+  - Gestev                  (scraper_gestev.py)
 """
 
 import json, sys
@@ -32,6 +34,7 @@ if __name__ == "__main__":
     all_events += run_scraper("scraper_bdq",    "Bibliothèque de Québec")
     all_events += run_scraper("scraper_moulin", "Moulin des Jésuites")
     all_events += run_scraper("scraper_mcq",    "Musée de la civilisation")
+    all_events += run_scraper("scraper_gestev", "Gestev – Famille")
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(all_events, f, ensure_ascii=False, indent=2)
