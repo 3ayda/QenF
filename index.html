@@ -278,11 +278,11 @@
 .wee-selection-bar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 22px; border-radius: 14px;
-  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  background: linear-gradient(135deg, #14532d, #16a34a);
   color: white; cursor: pointer; user-select: none;
   transition: box-shadow 0.15s; margin-bottom: 0;
 }
-.wee-selection-bar:hover { box-shadow: 0 6px 20px rgba(37,99,235,0.35); }
+.wee-selection-bar:hover { box-shadow: 0 6px 20px rgba(22,163,74,0.40); }
 .wee-selection-bar .sel-title {
   font-size: 1rem; font-weight: 800; letter-spacing: -0.01em;
 }
@@ -506,7 +506,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
       <div>
         <h1 class="text-2xl md:text-3xl font-extrabold text-white">Wee-QenF!</h1>
-        <p class="text-blue-200 text-base font-semibold mt-1">Profitez du week-end en famille</p>
+        <p class="text-blue-200 text-base font-semibold mt-1">Profitez de la fin de semaine en famille</p>
         <p id="weeDateRange" class="text-blue-300 text-sm font-medium mt-0.5">Chargement…</p>
       </div>
       <span id="weeCount" class="bg-white/20 text-white rounded-full text-sm font-bold px-4 py-1">…</span>
@@ -575,24 +575,23 @@
 <main class="max-w-7xl mx-auto px-4 py-8">
   <!-- Wee tab content -->
   <div id="weeLabels" style="display:none">
-    <!-- Day toggle buttons -->
-    <div class="wee-day-toggle" id="weeDayToggle">
-      <button class="wee-day-btn active" id="btnSam" onclick="setWeeDay('sam')">Samedi</button>
-      <button class="wee-day-btn"        id="btnDim" onclick="setWeeDay('dim')">Dimanche</button>
-    </div>
-
-    <!-- Notre sélection accordion -->
-    <div style="margin-bottom:32px">
+    <!-- Notre sélection accordion — above day toggle -->
+    <div style="margin-bottom:16px">
       <div class="wee-selection-bar" id="selBar" onclick="toggleSelection()">
         <div>
-          <div class="sel-title">Notre sélection Wee-QenF</div>
-          <div class="sel-sub">Les 10 incontournables du week-end</div>
+          <div class="sel-title">Découvrez notre sélection d'activités pour la fin de semaine</div>
         </div>
         <span class="sel-arrow">▼</span>
       </div>
       <div class="wee-selection-body" id="selBody">
         <div id="selGrid"></div>
       </div>
+    </div>
+
+    <!-- Day toggle buttons -->
+    <div class="wee-day-toggle" id="weeDayToggle">
+      <button class="wee-day-btn active" id="btnSam" onclick="setWeeDay('sam')">Samedi</button>
+      <button class="wee-day-btn"        id="btnDim" onclick="setWeeDay('dim')">Dimanche</button>
     </div>
 
     <!-- Day grid (injected by afficherWee) -->
