@@ -190,21 +190,32 @@ def in_window(date_str: str) -> bool:
 
 def detect_theme(categorie: str, titre: str) -> str:
     combined = (categorie + " " + titre).lower()
-    if any(k in combined for k in ["atelier", "bricolage", "création", "art"]):
+    # Sport must be checked before art (patin, patinoire contain no "art" but karting does)
+    if any(k in combined for k in ["sport", "hockey", "ski", "course", "natation",
+                                    "soccer", "basket", "patin", "karting", "vélo",
+                                    "olympique", "tournoi", "compétition"]):
+        return "sport"
+    # Spectacle: ice shows, theatre, circus, magic, Disney-type productions
+    if any(k in combined for k in ["spectacle", "cirque", "magie", "humour", "théâtre",
+                                    "theater", "theatre", "comédie", "comedie",
+                                    "disney", "glace", "sur glace", "holiday on ice",
+                                    "show", "revue", "cabaret", "marionnette",
+                                    "illusion", "prestidigit", "clown"]):
+        return "spectacle"
+    # Arts & Ateliers — use word-boundary-like check: "art" as whole word or "atelier"
+    if re.search(r"\barts?\b|\batelier", combined):
         return "arts"
-    if any(k in combined for k in ["spectacle", "cirque", "magie", "humour"]):
-        return "événement spécial"
+    if any(k in combined for k in ["bricolage", "création", "creatif", "créatif",
+                                    "dessin", "peinture", "sculpture", "poterie"]):
+        return "arts"
     if any(k in combined for k in ["cinéma", "cinema", "film"]):
         return "cinéma"
-    if any(k in combined for k in ["concert", "musique", "chanson"]):
+    if any(k in combined for k in ["concert", "musique", "chanson", "orchestre"]):
         return "musique"
-    if any(k in combined for k in ["visite", "guidée", "découverte"]):
+    if any(k in combined for k in ["visite", "guidée", "découverte", "patrimoine"]):
         return "visite guidée"
     if any(k in combined for k in ["expo", "exposition", "musée"]):
         return "exposition"
-    if any(k in combined for k in ["sport", "hockey", "ski", "course", "natation",
-                                    "soccer", "basket", "patin"]):
-        return "sport"
     return "événement spécial"
 
 
@@ -222,16 +233,51 @@ def detect_age(description: str, titre: str) -> str:
 
 
 def normalize_price(raw: str) -> str:
+    """
+    Normalize a raw price string to a clean display value.
+    - Extracts all dollar amounts, returns "À partir de X $" with the lowest.
+    - Handles "gratuit" → "Gratuit"
+    - Handles "inclus" → "Inclus avec le billet"
+    - Falls back to "Voir le site"
+    """
     if not raw:
         return "Voir le site"
     low = raw.lower().strip()
     if "gratuit" in low:
         return "Gratuit"
     if "inclus" in low:
-        return "Inclus avec le billet d'entrée"
-    # Keep a short price string, drop trailing junk
+        return "Inclus avec le billet"
+
+    # Find all numeric amounts: "29.50 $", "29,50$", "$29.50", "29 $", "29.50"
+    amounts = []
+    # Pattern covers: optional $ prefix, digits, optional decimal, optional $ suffix
+    for m in re.finditer(
+        r"\$?\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*\$?",
+        raw
+    ):
+        val_str = m.group(1).replace(",", ".")
+        try:
+            val = float(val_str)
+            if 1 <= val <= 999:   # sanity range: ignore years (2026) and tiny noise
+                amounts.append(val)
+        except ValueError:
+            pass
+
+    if amounts:
+        lowest = min(amounts)
+        # Format: no decimals if .00, otherwise 2 decimal places
+        if lowest == int(lowest):
+            formatted = f"{int(lowest)} $"
+        else:
+            formatted = f"{lowest:.2f} $".replace(".", ",")
+        return f"À partir de {formatted}"
+
+    # No amount found — return a cleaned short string or fallback
     cleaned = re.sub(r"\s{2,}", " ", raw).strip()
-    return cleaned[:80] if cleaned else "Voir le site"
+    # Don't return bare numbers (years, codes) as price strings
+    if re.fullmatch(r"[\d\s]+", cleaned):
+        return "Voir le site"
+    return cleaned[:60] if len(cleaned) > 2 else "Voir le site"
 
 
 def best_image(soup_el, page_url: str = "") -> str:

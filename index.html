@@ -142,14 +142,16 @@
 }
 
 /* Theme colours (badge is now neutral transparent — theme used for labels only) */
-.tc-arts    { color: #2563eb; } .bc-arts    {}
-.tc-cinema  { color: #7c3aed; } .bc-cinema  {}
-.tc-visite  { color: #0891b2; } .bc-visite  {}
-.tc-musique { color: #db2777; } .bc-musique {}
-.tc-event   { color: #d97706; } .bc-event   {}
-.tc-expo    { color: #059669; } .bc-expo    {}
+.tc-arts      { color: #2563eb; } .bc-arts    {}
+.tc-cinema    { color: #7c3aed; } .bc-cinema  {}
+.tc-visite    { color: #0891b2; } .bc-visite  {}
+.tc-musique   { color: #db2777; } .bc-musique {}
+.tc-event     { color: #d97706; } .bc-event   {}
+.tc-expo      { color: #059669; } .bc-expo    {}
+.tc-spectacle { color: #9333ea; } .bc-spectacle {}
 
-/* Summary chips */
+/* ── Sport ── */
+.tc-sport { color: #ea580c; }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
   background: rgba(255,255,255,0.2); border-radius: 999px;
@@ -407,6 +409,7 @@
               <div class="dd-opt" data-val="cinéma">            <span class="dd-chk"></span>🎬 Cinéma</div>
               <div class="dd-opt" data-val="visite guidée">     <span class="dd-chk"></span>🏛 Visites guidées</div>
               <div class="dd-opt" data-val="musique">           <span class="dd-chk"></span>🎵 Musique</div>
+              <div class="dd-opt" data-val="spectacle">         <span class="dd-chk"></span>🎭 Spectacles</div>
               <div class="dd-opt" data-val="événement spécial"> <span class="dd-chk"></span>⭐ Événements spéciaux</div>
               <div class="dd-opt" data-val="exposition">        <span class="dd-chk"></span>🖼 Expositions</div>
               <div class="dd-opt" data-val="sport">             <span class="dd-chk"></span>⚽ Sport</div>
@@ -473,6 +476,11 @@
               <div class="dd-opt" data-val="Beauport">                <span class="dd-chk"></span>Beauport</div>
               <div class="dd-opt" data-val="La Haute-Saint-Charles">  <span class="dd-chk"></span>La Haute-Saint-Charles</div>
               <div class="dd-opt" data-val="Sainte-Foy–Sillery–Cap-Rouge"><span class="dd-chk"></span>Sainte-Foy–Sillery–Cap-Rouge</div>
+              <div class="dd-divider"></div>
+              <div class="dd-opt" data-val="Wendake">                 <span class="dd-chk"></span>Wendake</div>
+              <div class="dd-opt" data-val="Petite-Lorette">          <span class="dd-chk"></span>Petite-Lorette</div>
+              <div class="dd-divider"></div>
+              <div class="dd-opt" data-val="Lévis">                   <span class="dd-chk"></span>Lévis</div>
               <span class="dd-clear">✕ Tout effacer</span>
             </div>
           </div>
@@ -713,15 +721,16 @@ document.addEventListener('click', closeAll);
 // THEME → CSS
 // ═══════════════════════════════════════════════════════
 function themeCSS(t) {
-  t = (t||'').toLowerCase();
-  if (t.includes('art')||t.includes('atel'))   return ['tc-arts',   'bc-arts'];
-  if (t.includes('cin'))                        return ['tc-cinema', 'bc-cinema'];
-  if (t.includes('visit')||t.includes('guid'))  return ['tc-visite', 'bc-visite'];
+  t = (t||'').toLowerCase().trim();
+  if (t === 'sport'                        ) return ['tc-sport',     'bc-sport'];
+  if (t === 'spectacle'                    ) return ['tc-spectacle',  'bc-spectacle'];
+  if (t === 'arts' || t.startsWith('art')  ) return ['tc-arts',      'bc-arts'];
+  if (t === 'cinéma' || t.includes('cin')  ) return ['tc-cinema',    'bc-cinema'];
+  if (t.includes('visit')||t.includes('guid')) return ['tc-visite',  'bc-visite'];
   if (t.includes('musiqu')||t.includes('conc')) return ['tc-musique','bc-musique'];
   if (t.includes('nement')||t.includes('spéc')) return ['tc-event',  'bc-event'];
-  if (t.includes('expo'))                       return ['tc-expo',   'bc-expo'];
-  if (t.includes('sport'))                      return ['tc-sport',  'bc-sport'];
-  return ['tc-arts','bc-arts'];
+  if (t.includes('expo')                   ) return ['tc-expo',      'bc-expo'];
+  return ['tc-event','bc-event'];
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1286,7 +1295,7 @@ function filtrer() {
   }
 
   const result = tousLesEvenements.filter(ev => {
-    if (fThemes.size > 0 && ![...fThemes].some(t => norm(ev.theme).includes(norm(t)))) return false;
+    if (fThemes.size > 0 && ![...fThemes].some(t => norm(ev.theme) === norm(t))) return false;
     if (fAges.size > 0) {
       const a = norm(ev.age);
       if (a !== 'tous') {
@@ -1314,7 +1323,7 @@ function filtrer() {
 // ═══════════════════════════════════════════════════════
 // ACTIVE FILTER SUMMARY
 // ═══════════════════════════════════════════════════════
-const THEME_LBL  = {'arts':'🎨 Arts','cinéma':'🎬 Cinéma','visite guidée':'🏛 Visites','musique':'🎵 Musique','événement spécial':'⭐ Événements','exposition':'🖼 Expos','sport':'⚽ Sport'};
+const THEME_LBL  = {'arts':'🎨 Arts','cinéma':'🎬 Cinéma','visite guidée':'🏛 Visites','musique':'🎵 Musique','spectacle':'🎭 Spectacles','événement spécial':'⭐ Événements','exposition':'🖼 Expos','sport':'⚽ Sport'};
 const AGE_LBL    = {'0-3':'0–3 ans','3-5':'3–5 ans','6-12':'6–12 ans','13+':'13 ans +'};
 const PERIOD_LBL = {'today':"Aujourd'hui",'week':'Cette semaine','month':'Ce mois','nextmonth':'Mois prochain'};
 
