@@ -176,8 +176,9 @@
   transition: transform 0.15s, background 0.15s;
 }
 .btn-bookmark:hover { transform: scale(1.18); background: rgba(0,0,0,0.55); }
-.btn-bookmark.saved { background: #2563eb; }
-.btn-bookmark.saved:hover { background: #1d4ed8; }
+.btn-bookmark.saved { background: rgba(0,0,0,0.38); }
+.btn-bookmark .star { color: white; font-size: 1.1rem; line-height: 1; transition: color 0.15s; }
+.btn-bookmark.saved .star { color: #fbbf24; }
 
 /* ── Tab nav ── */
 .tab-link {
@@ -256,6 +257,105 @@
 .wee-day-label::after {
   content: ''; flex: 1; height: 2px; background: #e2e8f0; border-radius: 2px;
 }
+
+/* ── Day toggle buttons ── */
+.wee-day-toggle {
+  display: flex; gap: 10px; margin-bottom: 8px;
+}
+.wee-day-btn {
+  padding: 8px 22px; border-radius: 10px; font-size: 0.88rem; font-weight: 700;
+  border: 2px solid #e2e8f0; background: white; color: #475569;
+  cursor: pointer; transition: all 0.15s; user-select: none;
+}
+.wee-day-btn:hover { border-color: #93c5fd; color: #1d4ed8; background: #eff6ff; }
+.wee-day-btn.active {
+  background: #2563eb; border-color: #2563eb; color: white;
+}
+
+/* ── Notre sélection accordion ── */
+.wee-selection-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 22px; border-radius: 14px;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  color: white; cursor: pointer; user-select: none;
+  transition: box-shadow 0.15s; margin-bottom: 0;
+}
+.wee-selection-bar:hover { box-shadow: 0 6px 20px rgba(37,99,235,0.35); }
+.wee-selection-bar .sel-title {
+  font-size: 1rem; font-weight: 800; letter-spacing: -0.01em;
+}
+.wee-selection-bar .sel-sub {
+  font-size: 0.78rem; font-weight: 500; opacity: 0.75; margin-top: 2px;
+}
+.wee-selection-bar .sel-arrow {
+  font-size: 1.1rem; transition: transform 0.25s; flex-shrink: 0;
+}
+.wee-selection-bar.open .sel-arrow { transform: rotate(180deg); }
+
+.wee-selection-body {
+  display: none; padding-top: 20px;
+}
+.wee-selection-body.open { display: block; }
+
+/* ── Wide selection card ── */
+.sel-card {
+  display: flex; background: white; border-radius: 16px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.07); border: 1px solid #f1f5f9;
+  overflow: hidden; transition: transform 0.18s, box-shadow 0.18s;
+  text-decoration: none; color: inherit; margin-bottom: 14px;
+  position: relative;
+}
+.sel-card:last-child { margin-bottom: 0; }
+.sel-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.12); }
+.sel-card-img {
+  width: 200px; min-width: 200px; flex-shrink: 0; position: relative; overflow: hidden;
+}
+.sel-card-img img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.sel-card-img .sel-rank {
+  position: absolute; top: 10px; left: 10px;
+  background: #2563eb; color: white; border-radius: 50%;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 800;
+}
+.sel-card-img .date-badge { font-size: 0.62rem; }
+.sel-card-body {
+  display: flex; flex-direction: column; flex: 1; padding: 18px 22px;
+}
+.sel-card-body .sel-theme {
+  font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+}
+.sel-card-body .sel-title {
+  font-size: 1.1rem; font-weight: 800; color: #111827; margin: 4px 0 6px; line-height: 1.3;
+}
+.sel-card-body .sel-summary {
+  font-size: 0.83rem; color: #374151; line-height: 1.5; flex: 1;
+}
+.sel-card-body .sel-meta {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center;
+}
+.sel-card-body .sel-meta-item {
+  font-size: 0.75rem; color: #6b7280; display: flex; align-items: center; gap: 4px;
+}
+.sel-card-body .sel-prix {
+  font-size: 0.72rem; font-weight: 700;
+  background: #dcfce7; color: #15803d; padding: 3px 10px; border-radius: 999px;
+  margin-left: auto;
+}
+.sel-card-body .sel-why {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px;
+}
+.sel-card .btn-bookmark {
+  top: 10px; left: unset; right: 10px; /* move bookmark to top-right on wide card */
+}
+/* Mobile: stack wide card vertically */
+@media (max-width: 640px) {
+  .sel-card { flex-direction: column; }
+  .sel-card-img { width: 100%; min-width: unset; height: 180px; }
+}
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -263,7 +363,7 @@
 <!-- ─── HEADER ─── -->
 <header class="bg-white shadow-sm sticky top-0 z-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-    <div class="flex items-center gap-1">
+    <div class="flex items-center gap-1" onclick="setTab('events')" style="cursor:pointer">
       <span class="text-2xl font-extrabold text-blue-600">Québec</span>
       <span class="text-2xl font-extrabold text-gray-800">en Famille</span>
     </div>
@@ -465,8 +565,32 @@
 
 <!-- ─── EVENT GRID ─── -->
 <main class="max-w-7xl mx-auto px-4 py-8">
-  <!-- Wee day-label sections injected here for wee tab -->
-  <div id="weeLabels" style="display:none"></div>
+  <!-- Wee tab content -->
+  <div id="weeLabels" style="display:none">
+    <!-- Day toggle buttons -->
+    <div class="wee-day-toggle" id="weeDayToggle">
+      <button class="wee-day-btn active" id="btnSam" onclick="setWeeDay('sam')">Samedi</button>
+      <button class="wee-day-btn"        id="btnDim" onclick="setWeeDay('dim')">Dimanche</button>
+    </div>
+
+    <!-- Notre sélection accordion -->
+    <div style="margin-bottom:32px">
+      <div class="wee-selection-bar" id="selBar" onclick="toggleSelection()">
+        <div>
+          <div class="sel-title">Notre sélection Wee-QenF</div>
+          <div class="sel-sub">Les 10 incontournables du week-end</div>
+        </div>
+        <span class="sel-arrow">▼</span>
+      </div>
+      <div class="wee-selection-body" id="selBody">
+        <div id="selGrid"></div>
+      </div>
+    </div>
+
+    <!-- Day grid (injected by afficherWee) -->
+    <div id="weeDayGrid"></div>
+  </div>
+
   <div id="eventGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <p class="text-center col-span-full text-gray-400">Chargement des activités…</p>
   </div>
@@ -698,12 +822,12 @@ function toggleFavori(e, safeUrl) {
   const btn = e.currentTarget;
   if (favoris.has(url)) {
     favoris.delete(url);
-    btn.classList.remove('saved'); btn.innerHTML = '🏷️';
+    btn.classList.remove('saved'); btn.innerHTML = '<span class="star">☆</span>';
     btn.title = 'Ajouter aux favoris';
     if (currentTab === 'favoris') afficherFavoris();
   } else {
     favoris.add(url);
-    btn.classList.add('saved'); btn.innerHTML = '🔖';
+    btn.classList.add('saved'); btn.innerHTML = '<span class="star">★</span>';
     btn.title = 'Retirer des favoris';
     btn.style.transform = 'scale(1.5)';
     setTimeout(() => { btn.style.transform = ''; }, 220);
@@ -724,7 +848,7 @@ function renderCard(ev) {
     <button class="btn-bookmark${saved?' saved':''}"
             onclick="toggleFavori(event,'${safeUrl}')"
             title="${saved?'Retirer des favoris':'Ajouter aux favoris'}">
-      ${saved ? '🔖' : '🏷️'}
+      <span class="star">${saved ? '★' : '☆'}</span>
     </button>
     <a href="${ev.URL||'#'}" target="_blank" rel="noopener noreferrer">
       <div style="position:relative" class="event-card-img">
@@ -738,7 +862,7 @@ function renderCard(ev) {
         <p class="card-location">📍 ${lieu}</p>
         <div class="card-spacer"></div>
         <div class="card-footer">
-          <span class="card-age">👶 ${ev.age}</span>
+          <span class="card-age">Âge : ${ev.age}</span>
           <span class="card-prix">${ev.prix}</span>
         </div>
       </div>
@@ -767,53 +891,205 @@ function afficherFavoris() {
   const grid = document.getElementById('eventGrid');
   grid.innerHTML = liste.length
     ? liste.map(renderCard).join('')
-    : emptyState('🔖','Aucun favori pour l\'instant','Cliquez sur 🏷️ sur une activité pour la sauvegarder ici');
+    : emptyState('⭐','Aucun favori pour l\'instant','Cliquez sur ☆ sur une activité pour la sauvegarder ici');
+}
+
+// ═══════════════════════════════════════════════════════
+// WEE-QENF  —  day toggle + sélection
+// ═══════════════════════════════════════════════════════
+let weeDay = 'sam';          // 'sam' | 'dim'
+let weeEvtsSam  = [];
+let weeEvtsDim  = [];
+let weeEvtsBoth = [];        // union for selection scoring
+
+function setWeeDay(day) {
+  weeDay = day;
+  document.getElementById('btnSam').classList.toggle('active', day === 'sam');
+  document.getElementById('btnDim').classList.toggle('active', day === 'dim');
+  renderWeeDay();
+}
+
+function toggleSelection() {
+  const bar  = document.getElementById('selBar');
+  const body = document.getElementById('selBody');
+  bar.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+/** Score an event for the selection: higher = more recommended */
+function scoreEvent(ev) {
+  let score = 0;
+  const { sam, dim } = getWeekend();
+  const plage = parsePlage(ev.date || '');
+
+  // 1. Expires this weekend (last day is Saturday or Sunday) → high priority
+  if (plage.fin) {
+    const samISO = dateISO(sam);
+    const dimISO = dateISO(dim);
+    const finISO = dateISO(plage.fin);
+    if (finISO === samISO || finISO === dimISO) score += 50;
+    // Also boost events ending within 7 days of the weekend
+    const daysLeft = (plage.fin - sam) / 86400000;
+    if (daysLeft >= 0 && daysLeft <= 7) score += 20;
+  }
+
+  // 2. Occurs only on one day of the weekend (single-day)
+  const onSam = chevaucheFenetre(plage, sam, new Date(sam.getTime() + 86399999));
+  const onDim = chevaucheFenetre(plage, new Date(sam.getTime() + 86400000), dim);
+  if (onSam !== onDim) score += 30;   // exclusive to one day
+
+  // 3. Variety bonus: identify indoor vs outdoor from lieu/theme
+  const txt = ((ev.lieu || '') + ' ' + (ev.theme || '') + ' ' + (ev.titre || '')).toLowerCase();
+  const isOutdoor = /parc|plein.air|extérieur|nature|piste|rue|baie|colline|sentier|ski|glace|patino/i.test(txt);
+  ev._outdoor = isOutdoor;   // tag for selection rendering
+
+  return score;
+}
+
+/** Render the wide selection card for "Notre sélection" */
+function renderSelCard(ev, rank) {
+  const [lbl] = themeCSS(ev.theme);
+  const badge   = ev.date ? `<span class="date-badge">${ev.date}</span>` : '';
+  const saved   = favoris.has(ev.URL);
+  const safeUrl = encodeURIComponent(ev.URL || '');
+
+  // Short summary: use description if available, else generate one from fields
+  const desc = (ev.description || '').trim();
+  const summary = desc.length > 20
+    ? desc.slice(0, 200) + (desc.length > 200 ? '…' : '')
+    : `${ev.theme ? ev.theme.charAt(0).toUpperCase() + ev.theme.slice(1) + ' — ' : ''}${ev.lieu || ''}. Public : ${ev.age}.`;
+
+  // Why it's in selection
+  const { sam, dim } = getWeekend();
+  const plage  = parsePlage(ev.date || '');
+  let whyLabel = '';
+  if (plage.fin) {
+    const finISO = dateISO(plage.fin);
+    const samISO = dateISO(sam);
+    const dimISO = dateISO(dim);
+    if (finISO === samISO || finISO === dimISO) whyLabel = 'Dernier week-end';
+    else {
+      const daysLeft = (plage.fin - sam) / 86400000;
+      if (daysLeft >= 0 && daysLeft <= 7) whyLabel = 'Derniers jours';
+    }
+  }
+  if (!whyLabel) {
+    const onSam = chevaucheFenetre(plage, sam, new Date(sam.getTime() + 86399999));
+    const onDim = chevaucheFenetre(plage, new Date(sam.getTime() + 86400000), dim);
+    if (onSam !== onDim) whyLabel = 'Un seul jour';
+  }
+  if (!whyLabel) whyLabel = ev._outdoor ? 'Plein air' : 'À ne pas manquer';
+
+  const whyHtml = `<span class="sel-why">${whyLabel}</span>`;
+
+  return `<div class="sel-card">
+    <button class="btn-bookmark${saved?' saved':''}"
+            onclick="toggleFavori(event,'${safeUrl}')"
+            title="${saved?'Retirer des favoris':'Ajouter aux favoris'}"
+            style="z-index:3">
+      <span class="star">${saved ? '★' : '☆'}</span>
+    </button>
+    <a href="${ev.URL||'#'}" target="_blank" rel="noopener noreferrer"
+       style="display:flex;flex:1;text-decoration:none;color:inherit;overflow:hidden;">
+      <div class="sel-card-img">
+        <img src="${ev.image||'https://via.placeholder.com/600x300'}" alt="${ev.titre}" loading="lazy">
+        <div class="sel-rank">${rank}</div>
+        ${badge}
+      </div>
+      <div class="sel-card-body">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="sel-theme ${lbl}">${ev.theme||''}</span>
+          ${whyHtml}
+        </div>
+        <div class="sel-title">${ev.titre}</div>
+        <div class="sel-summary">${summary}</div>
+        <div class="sel-meta">
+          <span class="sel-meta-item">📍 ${ev.lieu||''}</span>
+          <span class="sel-meta-item">Âge : ${ev.age||'Tous'}</span>
+          <span class="sel-prix">${ev.prix||''}</span>
+        </div>
+      </div>
+    </a>
+  </div>`;
+}
+
+function renderWeeDay() {
+  const list   = weeDay === 'sam' ? weeEvtsSam : weeEvtsDim;
+  const grid   = document.getElementById('weeDayGrid');
+  const { sam, dim } = getWeekend();
+  const dimDebut = new Date(sam.getTime() + 86400000); dimDebut.setHours(0,0,0,0);
+  const label  = weeDay === 'sam'
+    ? `Samedi ${formatDateFR(sam)}`
+    : `Dimanche ${formatDateFR(dimDebut)}`;
+  const count  = list.length;
+
+  if (!count) {
+    grid.innerHTML = `<div class="wee-day-label">${label}</div>` +
+      emptyState('😴', 'Aucune activité ce jour', 'Consultez l\'autre journée du week-end !');
+    return;
+  }
+  grid.innerHTML =
+    `<div class="wee-day-label">${label} <span style="font-size:0.8rem;font-weight:600;color:#64748b;margin-left:6px">${count} activité${count!==1?'s':''}</span></div>
+     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">${list.map(renderCard).join('')}</div>`;
 }
 
 function afficherWee() {
   const { sam, dim } = getWeekend();
-  const samFin = new Date(sam); samFin.setHours(23,59,59,999);
+  const samFin   = new Date(sam); samFin.setHours(23,59,59,999);
+  const dimDebut = new Date(sam.getTime() + 86400000); dimDebut.setHours(0,0,0,0);
 
   document.getElementById('weeDateRange').textContent =
-    `Samedi ${formatDateFR(sam)} & Dimanche ${formatDateFR(new Date(sam.getTime() + 86400000))}`;
+    `Samedi ${formatDateFR(sam)} & Dimanche ${formatDateFR(dimDebut)}`;
 
-  // Filter per day
-  const evtsSam = tousLesEvenements.filter(ev =>
-    chevaucheFenetre(parsePlage(ev.date||''), sam, samFin));
-  const dimDebut = new Date(sam.getTime() + 86400000); dimDebut.setHours(0,0,0,0);
-  const evtsDim  = tousLesEvenements.filter(ev =>
-    chevaucheFenetre(parsePlage(ev.date||''), dimDebut, dim));
+  weeEvtsSam  = tousLesEvenements.filter(ev => chevaucheFenetre(parsePlage(ev.date||''), sam,      samFin));
+  weeEvtsDim  = tousLesEvenements.filter(ev => chevaucheFenetre(parsePlage(ev.date||''), dimDebut, dim));
 
-  // Deduplicate: events on both days shown once (Saturday section)
-  const urlsSam     = new Set(evtsSam.map(e => e.URL));
-  const evtsDimOnly = evtsDim.filter(e => !urlsSam.has(e.URL));
-  const total       = urlsSam.size + evtsDimOnly.length;
+  // Union (deduplicated) for scoring
+  const seenUrls = new Set();
+  weeEvtsBoth = [];
+  [...weeEvtsSam, ...weeEvtsDim].forEach(ev => {
+    if (!seenUrls.has(ev.URL)) { seenUrls.add(ev.URL); weeEvtsBoth.push(ev); }
+  });
 
+  const total = weeEvtsBoth.length;
   document.getElementById('weeCount').textContent =
     `${total} activité${total !== 1 ? 's' : ''} ce week-end`;
 
-  const labels = document.getElementById('weeLabels');
-  const grid   = document.getElementById('eventGrid');
+  // Update day-toggle button labels with counts
+  document.getElementById('btnSam').textContent = `Samedi (${weeEvtsSam.length})`;
+  document.getElementById('btnDim').textContent = `Dimanche (${weeEvtsDim.length})`;
 
-  if (!total) {
-    labels.innerHTML = '';
-    grid.innerHTML = emptyState('😴','Aucune activité ce week-end','Revenez bientôt !');
-    return;
+  // Build "Notre sélection": score + sort + take 10, alternating indoor/outdoor
+  const scored = weeEvtsBoth
+    .map(ev => ({ ev, score: scoreEvent(ev) }))
+    .sort((a, b) => b.score - a.score);
+
+  // Pick up to 10, trying to balance indoor/outdoor (at least 3 of each if available)
+  const outdoor = scored.filter(x => x.ev._outdoor);
+  const indoor  = scored.filter(x => !x.ev._outdoor);
+  const selection = [];
+  const used = new Set();
+  const addIfNew = ({ ev }) => { if (!used.has(ev.URL)) { used.add(ev.URL); selection.push(ev); } };
+
+  // Take top-scored first, but weave in at least 3 from the minority type
+  const minType  = outdoor.length < indoor.length ? outdoor : indoor;
+  const majType  = outdoor.length < indoor.length ? indoor  : outdoor;
+  let mi = 0, mj = 0;
+  while (selection.length < 10 && (mi < minType.length || mj < majType.length)) {
+    // ratio: 1 from minority every 3 from majority
+    if (mi < minType.length && (selection.length % 3 === 2 || mj >= majType.length)) {
+      addIfNew(minType[mi++]);
+    } else if (mj < majType.length) {
+      addIfNew(majType[mj++]);
+    }
   }
 
-  // Build day sections inside weeLabels; clear main grid
-  let html = '';
-  const samLabel = new Date(sam); samLabel.setHours(0,0,0,0);
-  if (evtsSam.length) {
-    html += `<div class="wee-day-label">🗓 Samedi ${formatDateFR(samLabel)} <span style="font-size:0.8rem;font-weight:600;color:#64748b;margin-left:6px">${evtsSam.length} activité${evtsSam.length!==1?'s':''}</span></div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-2">${evtsSam.map(renderCard).join('')}</div>`;
-  }
-  if (evtsDimOnly.length) {
-    html += `<div class="wee-day-label">🗓 Dimanche ${formatDateFR(dimDebut)} <span style="font-size:0.8rem;font-weight:600;color:#64748b;margin-left:6px">${evtsDimOnly.length} activité${evtsDimOnly.length!==1?'s':''}</span></div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">${evtsDimOnly.map(renderCard).join('')}</div>`;
-  }
-  labels.innerHTML = html;
-  grid.innerHTML   = '';   // content is in labels sections
+  document.getElementById('selGrid').innerHTML = selection.length
+    ? selection.map((ev, i) => renderSelCard(ev, i + 1)).join('')
+    : `<p style="text-align:center;color:#94a3b8;padding:32px">Aucune activité ce week-end.</p>`;
+
+  // Render the active day
+  renderWeeDay();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -969,7 +1245,12 @@ function setTab(tab) {
 
   if (tab === 'events')  filtrer();
   if (tab === 'favoris') afficherFavoris();
-  if (tab === 'wee')     afficherWee();
+  if (tab === 'wee') {
+    weeDay = 'sam';   // reset to Saturday when switching to tab
+    document.getElementById('btnSam').classList.add('active');
+    document.getElementById('btnDim').classList.remove('active');
+    afficherWee();
+  }
 }
 
 // ═══════════════════════════════════════════════════════
