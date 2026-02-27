@@ -228,10 +228,14 @@ def scrape_event_detail(url):
                 description = t
                 break
 
-    # Section Informations
+    # Section Informations — must match the heading EXACTLY as "Informations"
+    # NOT "Informations sur l'image" which appears earlier and contains only
+    # a photo caption (causing all date/price extraction to get the wrong block).
     info_text = ""
+    INFO_EXACT = re.compile(r"^informations?\s*$", re.IGNORECASE)
     for h2 in main.find_all("h2"):
-        if "information" in h2.get_text(strip=True).lower():
+        h2_txt = h2.get_text(strip=True)
+        if INFO_EXACT.match(h2_txt):
             parts = []
             for sib in h2.find_next_siblings():
                 if sib.name == "h2":
@@ -250,37 +254,41 @@ def scrape_event_detail(url):
             prix_raw = line
             break
 
-    # Dates — ONLY extract from the Informations section text.
-    # Never fall back to main.get_text() which includes "Autres activités"
-    # recommendations containing other events' dates (cross-contamination bug).
+    # Dates — only from the Informations block (never fall back to full page).
+    # Handles three formats:
+    #   "15 février 2026 au 29 mars 2026"               → range
+    #   "14 janvier 2026, 27 février 2026 et 10 avril 2026" → pick first & last
+    #   "27 février 2026"                                → single date
     dates_text = ""
+    DATE_RE = re.compile(
+        r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}",
+        re.IGNORECASE
+    )
     DATE_RANGE_RE = re.compile(
         r"(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})"
         r"\s+au\s+"
         r"(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})",
         re.IGNORECASE
     )
-    DATE_SINGLE_RE = re.compile(
-        r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}",
-        re.IGNORECASE
-    )
     if info_text:
-        # Prefer a full date range "X au Y"
+        # 1. Try explicit "X au Y" range
         m = DATE_RANGE_RE.search(info_text)
         if m:
             dates_text = f"{m.group(1)} au {m.group(2)}"
         else:
-            # Single date
-            m = DATE_SINGLE_RE.search(info_text)
-            if m:
-                dates_text = m.group(0).strip()
-    # If Informations had no date, leave dates_text empty rather than
-    # risk picking up dates from "Autres activités" or other sections.
+            # 2. Collect all individual dates in order
+            all_dates = DATE_RE.findall(info_text)
+            if len(all_dates) >= 2:
+                # Multiple dates (e.g. "14 janvier 2026, 27 février 2026 et 10 avril 2026")
+                # → represent as first au last
+                dates_text = f"{all_dates[0]} au {all_dates[-1]}"
+            elif len(all_dates) == 1:
+                dates_text = all_dates[0]
 
-    # Lieu
+    # Lieu — same exact heading match as info_text
     lieu = "MNBAQ"
     for h2 in main.find_all("h2"):
-        if "information" in h2.get_text(strip=True).lower():
+        if INFO_EXACT.match(h2.get_text(strip=True)):
             for sib in h2.find_next_siblings():
                 if sib.name == "h2":
                     break
