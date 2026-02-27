@@ -228,17 +228,17 @@ def scrape_event_detail(url):
                 description = t
                 break
 
-    # Section Informations — must match the heading EXACTLY as "Informations"
-    # NOT "Informations sur l'image" which appears earlier and contains only
-    # a photo caption (causing all date/price extraction to get the wrong block).
+    # Section Informations — search ALL heading levels (h1-h5).
+    # The MNBAQ page uses <h3> for "Informations", not <h2>.
+    # Must still exclude "Informations sur l'image" (appears as <h2> earlier).
     info_text = ""
     INFO_EXACT = re.compile(r"^informations?\s*$", re.IGNORECASE)
-    for h2 in main.find_all("h2"):
-        h2_txt = h2.get_text(strip=True)
-        if INFO_EXACT.match(h2_txt):
+    HEADING_TAGS = ["h1", "h2", "h3", "h4", "h5"]
+    for tag in main.find_all(HEADING_TAGS):
+        if INFO_EXACT.match(tag.get_text(strip=True)):
             parts = []
-            for sib in h2.find_next_siblings():
-                if sib.name == "h2":
+            for sib in tag.find_next_siblings():
+                if sib.name in HEADING_TAGS:
                     break
                 t = sib.get_text(" ", strip=True)
                 if t:
@@ -285,12 +285,12 @@ def scrape_event_detail(url):
             elif len(all_dates) == 1:
                 dates_text = all_dates[0]
 
-    # Lieu — same exact heading match as info_text
+    # Lieu — same exact heading match, all heading levels
     lieu = "MNBAQ"
-    for h2 in main.find_all("h2"):
-        if INFO_EXACT.match(h2.get_text(strip=True)):
-            for sib in h2.find_next_siblings():
-                if sib.name == "h2":
+    for tag in main.find_all(HEADING_TAGS):
+        if INFO_EXACT.match(tag.get_text(strip=True)):
+            for sib in tag.find_next_siblings():
+                if sib.name in HEADING_TAGS:
                     break
                 for link in (sib.find_all("a") if hasattr(sib, "find_all") else []):
                     href = link.get("href", "")
