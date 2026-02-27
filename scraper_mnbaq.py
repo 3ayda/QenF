@@ -228,14 +228,17 @@ def scrape_event_detail(url):
                 description = t
                 break
 
-    # Section Informations — search ALL heading levels (h1-h5).
-    # The MNBAQ page uses <h3> for "Informations", not <h2>.
-    # Must still exclude "Informations sur l'image" (appears as <h2> earlier).
+    # ── Extract the "Informations" block ──────────────────────────────────────
+    # Strategy A: heading-based (h1-h5), with NFKC normalisation to handle
+    #             non-breaking spaces and other invisible Unicode chars.
+    import unicodedata
     info_text = ""
-    INFO_EXACT = re.compile(r"^informations?\s*$", re.IGNORECASE)
+    INFO_EXACT   = re.compile(r"^informations?\s*$", re.IGNORECASE)
     HEADING_TAGS = ["h1", "h2", "h3", "h4", "h5"]
+
     for tag in main.find_all(HEADING_TAGS):
-        if INFO_EXACT.match(tag.get_text(strip=True)):
+        raw = unicodedata.normalize("NFKC", tag.get_text()).strip()
+        if INFO_EXACT.match(raw):
             parts = []
             for sib in tag.find_next_siblings():
                 if sib.name in HEADING_TAGS:
@@ -246,7 +249,24 @@ def scrape_event_detail(url):
             info_text = " \n".join(parts)
             break
 
-    # Prix
+    # Strategy B: if heading search failed, split the full page text on the
+    #             standalone word "Informations" and grab everything up to
+    #             "Autres activités" or end of page.  This is immune to
+    #             whatever HTML tag wraps the heading.
+    if not info_text:
+        full = main.get_text("\n", strip=True)
+        # Match "Informations" on its own line (not "Informations sur l'image")
+        INFO_BLOCK_RE = re.compile(
+            r"(?:^|\n)\s*Informations\s*\n"   # standalone heading line
+            r"(.*?)"                            # the block content
+            r"(?=\n\s*(?:Autres activit|Mettez de l|©|\Z))",
+            re.IGNORECASE | re.DOTALL,
+        )
+        bm = INFO_BLOCK_RE.search(full)
+        if bm:
+            info_text = bm.group(1).strip()
+
+    # ── Prix ──────────────────────────────────────────────────────────────────
     prix_raw = ""
     for line in info_text.splitlines():
         line = line.strip()
@@ -254,41 +274,38 @@ def scrape_event_detail(url):
             prix_raw = line
             break
 
-    # Dates — only from the Informations block (never fall back to full page).
-    # Handles three formats:
-    #   "15 février 2026 au 29 mars 2026"               → range
-    #   "14 janvier 2026, 27 février 2026 et 10 avril 2026" → pick first & last
-    #   "27 février 2026"                                → single date
+    # ── Dates ─────────────────────────────────────────────────────────────────
+    # Handles three formats found on MNBAQ:
+    #   "15 février 2026 au 29 mars 2026"                        → range
+    #   "14 janvier 2026, 27 février 2026 et 10 avril 2026"      → list → first au last
+    #   "27 février 2026"                                         → single date
     dates_text = ""
     DATE_RE = re.compile(
         r"\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4}",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     DATE_RANGE_RE = re.compile(
         r"(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})"
         r"\s+au\s+"
         r"(\d{1,2}\s+[A-Za-z\u00C0-\u024F]+\s+\d{4})",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     if info_text:
-        # 1. Try explicit "X au Y" range
         m = DATE_RANGE_RE.search(info_text)
         if m:
             dates_text = f"{m.group(1)} au {m.group(2)}"
         else:
-            # 2. Collect all individual dates in order
             all_dates = DATE_RE.findall(info_text)
             if len(all_dates) >= 2:
-                # Multiple dates (e.g. "14 janvier 2026, 27 février 2026 et 10 avril 2026")
-                # → represent as first au last
                 dates_text = f"{all_dates[0]} au {all_dates[-1]}"
             elif len(all_dates) == 1:
                 dates_text = all_dates[0]
 
-    # Lieu — same exact heading match, all heading levels
+    # ── Lieu ──────────────────────────────────────────────────────────────────
     lieu = "MNBAQ"
     for tag in main.find_all(HEADING_TAGS):
-        if INFO_EXACT.match(tag.get_text(strip=True)):
+        raw = unicodedata.normalize("NFKC", tag.get_text()).strip()
+        if INFO_EXACT.match(raw):
             for sib in tag.find_next_siblings():
                 if sib.name in HEADING_TAGS:
                     break
